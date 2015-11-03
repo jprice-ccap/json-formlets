@@ -24,3 +24,4 @@ scalacOptions ++= Seq("-deprecation","-feature","-Xfatal-warnings")
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
+addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.6.0")

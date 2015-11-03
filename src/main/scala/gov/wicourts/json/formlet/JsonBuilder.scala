@@ -21,8 +21,12 @@ object JsonArrayBuilder {
   }
 }
 
-class JsonObjectBuilder private [formlet] (private val items: List[(String, Json)]) extends JsonBuilder {
+class JsonObjectBuilder private [formlet] (
+  private val items: List[(String, Json)]
+) extends JsonBuilder {
   def toJson: Json = Json.obj(items: _*)
+
+  override def toString: String = "JsonObjectBuilder(" + items.mkString(", ") + ")"
 }
 
 object JsonObjectBuilder {

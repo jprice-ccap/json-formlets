@@ -3,7 +3,7 @@ package gov.wicourts.json
 import argonaut.Json
 
 package object formlet {
-  type ObjectFormlet[A] = Formlet[JsonObjectBuilder, A, JsonObjectBuilder]
+  type ObjectFormlet[A] = Formlet[JsonObjectBuilder, A, JsonView]
 
   def row(name: String, json: Json): JsonObjectBuilder =
     new JsonObjectBuilder(List((name, json)))
