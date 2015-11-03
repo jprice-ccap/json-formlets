@@ -4,6 +4,7 @@ import org.specs2.mutable.Specification
 
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
+import scalaz.syntax.applicative._
 
 import argonaut._
 import argonaut.Argonaut.jNull
@@ -54,6 +55,31 @@ class FormsSpec extends Specification {
       val (_, view) = Forms.string("nameL", None).run(jNull)
 
       view.view.toJson.nospaces must_== "{}"
+    }
+  }
+
+  "A composite form example" >> {
+    case class FullName(nameF: Option[String], nameL: Option[String])
+
+    def fullNameForm(fullName: FullName): ObjectFormlet[FullName] =
+      ^(
+        Forms.string("nameF", fullName.nameF),
+        Forms.string("nameL", fullName.nameL)
+      )(FullName.apply _)
+
+    "should be able to render initial data" >> {
+      val (_, view) = fullNameForm(FullName("Jack".some, "Sprat".some)).run(jNull)
+
+      view.view.toJson.nospaces must_== """{"nameL":"Sprat","nameF":"Jack"}"""
+    }
+
+    "should be able to extract data" >> {
+      val (result, view) = fullNameForm(FullName(None, None)).run(
+        parse("""{"nameL":"Sprat","nameF":"Jack"}""")
+      )
+
+      view.view.toJson.nospaces must_== """{"nameL":"Sprat","nameF":"Jack"}"""
+      result must_== FullName("Jack".some, "Sprat".some).success
     }
   }
 }
