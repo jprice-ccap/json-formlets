@@ -9,18 +9,21 @@ import scalaz.syntax.applicative._
 import argonaut._
 import argonaut.Argonaut.jNull
 
+import gov.wicourts.json.formlet.Forms._
+import gov.wicourts.json.formlet.syntax._
+
 class FormsSpec extends Specification {
   private def parse(s: String): Json =
     Parse.parseOption(s).getOrElse(throw new Exception("Unexpected parse failure"))
 
   "A string form" >> {
     "should be able to render its value" >> {
-      val (_, view) = Forms.string("nameL", "Smith".some).run(jNull)
-      view.view.toJson.nospaces must_== """{"nameL":"Smith"}"""
+      val (_, view) = string("nameL", "Smith".some).run(jNull)
+      view.toJson.nospaces must_== """{"nameL":{"value":"Smith"}}"""
     }
 
     "should be able to extract its value" >> {
-      val (result, _) = Forms.string("nameL", None).run(
+      val (result, _) = string("nameL", None).run(
         parse("""{"nameL":"Smith"}""")
       )
 
@@ -28,7 +31,7 @@ class FormsSpec extends Specification {
     }
 
     "should fail with an error message if value exists, but is not a string" >> {
-      val (result, _) = Forms.string("nameL", None).run(
+      val (result, _) = string("nameL", None).run(
         parse("""{"nameL":1}""")
       )
 
@@ -36,7 +39,7 @@ class FormsSpec extends Specification {
     }
 
     "should treat null as empty (good idea?)" >> {
-      val (result, _) = Forms.string("nameL", None).run(
+      val (result, _) = string("nameL", None).run(
         parse("""{"nameL":null}""")
       )
 
@@ -44,7 +47,7 @@ class FormsSpec extends Specification {
     }
 
     "should trim spaces from the result" >> {
-      val (result, _) = Forms.string("nameL", None).run(
+      val (result, _) = string("nameL", None).run(
         parse("""{"nameL":" Smith  "}""")
       )
 
@@ -52,9 +55,15 @@ class FormsSpec extends Specification {
     }
 
     "should omit the value from the rendered view if value is not defined" >> {
-      val (_, view) = Forms.string("nameL", None).run(jNull)
+      val (_, view) = string("nameL", None).run(jNull)
 
-      view.view.toJson.nospaces must_== "{}"
+      view.toJson.nospaces must_== "{}"
+    }
+
+    "can be assigned a label" >> {
+      val (_, view) = string("nameL", None).label("Last name").run(jNull)
+
+      view.toJson.nospaces must_== """{"nameL":{"metadata":{"label":"Last name"}}}"""
     }
   }
 
@@ -63,14 +72,14 @@ class FormsSpec extends Specification {
 
     def fullNameForm(fullName: FullName): ObjectFormlet[FullName] =
       ^(
-        Forms.string("nameF", fullName.nameF),
-        Forms.string("nameL", fullName.nameL)
+        string("nameF", fullName.nameF).row,
+        string("nameL", fullName.nameL).row
       )(FullName.apply _)
 
     "should be able to render initial data" >> {
       val (_, view) = fullNameForm(FullName("Jack".some, "Sprat".some)).run(jNull)
 
-      view.view.toJson.nospaces must_== """{"nameL":"Sprat","nameF":"Jack"}"""
+      view.toJson.nospaces must_== """{"nameL":{"value":"Sprat"},"nameF":{"value":"Jack"}}"""
     }
 
     "should be able to extract data" >> {
@@ -78,7 +87,7 @@ class FormsSpec extends Specification {
         parse("""{"nameL":"Sprat","nameF":"Jack"}""")
       )
 
-      view.view.toJson.nospaces must_== """{"nameL":"Sprat","nameF":"Jack"}"""
+      view.toJson.nospaces must_== """{"nameL":{"value":"Sprat"},"nameF":{"value":"Jack"}}"""
       result must_== FullName("Jack".some, "Sprat".some).success
     }
   }

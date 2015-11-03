@@ -36,4 +36,7 @@ object JsonObjectBuilder {
     def append(f1: JsonObjectBuilder, f2: => JsonObjectBuilder): JsonObjectBuilder =
       new JsonObjectBuilder(f1.items ++ f2.items)
   }
+
+  def row(name: String, json: Json): JsonObjectBuilder =
+    new JsonObjectBuilder(List((name, json)))
 }

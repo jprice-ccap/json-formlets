@@ -8,7 +8,6 @@ import scalaz.OptionT.optionT
 import scalaz.std.option._
 import scalaz.syntax.bind._
 import scalaz.syntax.std.option._
-import scalaz.syntax.validation._
 import scalaz.syntax.either._
 
 object Forms {
@@ -19,33 +18,37 @@ object Forms {
     fromJson: Json => Option[A],
     name: String,
     value: Option[A]
-  ): ObjectFormlet[Option[A]] =
+  ): FieldFormlet[Option[A]] =
     Formlet(c => {
       val result = optionT[JsonObjectBuilder \/ ?](
         c.field(name).filterNot(_.isNull).right[JsonObjectBuilder]
       ).flatMapF(j =>
         j.right[JsonObjectBuilder].ensure(
-          row(name, jString(s"Field $name must be a $descr"))
+          JsonObjectBuilder.row(name, jString(s"Field $name must be a $descr"))
         )(
           matches
         ) >>= (fromJson(_).toRightDisjunction(
-          row(name, jString("internal error: expected a $descr"))
+          JsonObjectBuilder.row(name, jString("internal error: expected a $descr"))
         ))
       ).run.validation
 
-      val view = (result.toOption.join orElse value).map(v =>
-        row(name, toJson(v))
-      ).orZero
+      val view = FieldView(name, (result.toOption.join orElse value).map(toJson), None)
 
-      (result, JsonView(view, Map()))
+      (result, view)
     })
 
-  def string(name: String, value: Option[String]): ObjectFormlet[Option[String]] =
+  def string(name: String, value: Option[String]): FieldFormlet[Option[String]] =
     primitive("string", jString(_), _.isString, _.string.map(_.trim), name, value)
 
-  def number(name: String, value: Option[JsonNumber]): ObjectFormlet[Option[JsonNumber]] =
+  def number(name: String, value: Option[JsonNumber]): FieldFormlet[Option[JsonNumber]] =
     primitive("number", jNumber(_), _.isNumber, _.number, name, value)
 
-  def boolean(name: String, value: Option[Boolean]): ObjectFormlet[Option[Boolean]] =
+  def boolean(name: String, value: Option[Boolean]): FieldFormlet[Option[Boolean]] =
     primitive("boolean", jBool(_), _.isBool, _.bool, name, value)
+
+  def row[A](field: FieldFormlet[A]): ObjectFormlet[A] =
+    field.mapView(_.toJsonObjectBuilder)
+
+  def label[A](field: FieldFormlet[A], label: String): FieldFormlet[A] =
+    field.mapView(FieldView.label.set(_, label.some))
 }

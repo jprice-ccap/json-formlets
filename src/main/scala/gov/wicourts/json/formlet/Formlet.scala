@@ -21,6 +21,12 @@ case class Formlet[E, A, M](run: Json => (Validation[E, A], M)) {
       val (ff, v2) = f.run(c)
       (a <*> ff, v1 |+| v2)
     })
+
+  def mapView[N](f: M => N): Formlet[E, A, N] =
+    Formlet(c => {
+      val (a, v) = run(c)
+      (a, f(v))
+    })
 }
 
 object Formlet {
