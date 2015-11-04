@@ -6,9 +6,12 @@ import argonaut.Argonaut._
 import scalaz.\/
 import scalaz.OptionT.optionT
 import scalaz.std.option._
+import scalaz.syntax.applicative._
 import scalaz.syntax.bind._
-import scalaz.syntax.std.option._
 import scalaz.syntax.either._
+import scalaz.syntax.std.option._
+
+import scalaz.Id.Id
 
 object Forms {
   private def primitive[A](
@@ -34,7 +37,7 @@ object Forms {
 
       val view = FieldView(name, (result.toOption.join orElse value).map(toJson), None)
 
-      (result, view)
+      (result, view).point[Id]
     })
 
   def row[A](field: FieldFormlet[A]): ObjectFormlet[A] =

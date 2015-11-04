@@ -2,10 +2,12 @@ package gov.wicourts.json
 
 import argonaut.Json
 
-package object formlet {
-  type FieldFormlet[A] = Formlet[Json, List[String], A, FieldView]
+import scalaz.Id.Id
 
-  type ObjectFormlet[A] = Formlet[Json, JsonObjectBuilder, A, JsonObjectBuilder]
+package object formlet {
+  type FieldFormlet[A] = Formlet[Id, Json, List[String], A, FieldView]
+
+  type ObjectFormlet[A] = Formlet[Id, Json, JsonObjectBuilder, A, JsonObjectBuilder]
 
   object syntax extends ToFieldFormletOps
 }
