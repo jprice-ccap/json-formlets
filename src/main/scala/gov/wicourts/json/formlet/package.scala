@@ -3,9 +3,9 @@ package gov.wicourts.json
 import argonaut.Json
 
 package object formlet {
-  type FieldFormlet[A] = Formlet[JsonObjectBuilder, A, FieldView]
+  type FieldFormlet[A] = Formlet[Json, JsonObjectBuilder, A, FieldView]
 
-  type ObjectFormlet[A] = Formlet[JsonObjectBuilder, A, JsonObjectBuilder]
+  type ObjectFormlet[A] = Formlet[Json, JsonObjectBuilder, A, JsonObjectBuilder]
 
   object syntax extends ToFieldFormletOps
 }
