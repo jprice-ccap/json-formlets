@@ -20,15 +20,15 @@ object Forms {
     value: Option[A]
   ): FieldFormlet[Option[A]] =
     Formlet(c => {
-      val result = optionT[JsonObjectBuilder \/ ?](
-        c.field(name).filterNot(_.isNull).right[JsonObjectBuilder]
+      val result = optionT[List[String] \/ ?](
+        c.field(name).filterNot(_.isNull).right[List[String]]
       ).flatMapF(j =>
-        j.right[JsonObjectBuilder].ensure(
-          JsonObjectBuilder.row(name, jString(s"Field $name must be a $descr"))
+        j.right[List[String]].ensure(
+          List(s"Field $name must be a $descr")
         )(
           matches
         ) >>= (fromJson(_).toRightDisjunction(
-          JsonObjectBuilder.row(name, jString("internal error: expected a $descr"))
+          List("internal error: expected a $descr")
         ))
       ).run.validation
 
@@ -36,6 +36,14 @@ object Forms {
 
       (result, view)
     })
+
+  def row[A](field: FieldFormlet[A]): ObjectFormlet[A] =
+    field.mapResult((a, v) => (
+      a.leftMap(
+        l => JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)): _*))
+      ),
+      v.toJsonObjectBuilder
+    ))
 
   def string(name: String, value: Option[String]): FieldFormlet[Option[String]] =
     primitive("string", jString(_), _.isString, _.string.map(_.trim), name, value)
@@ -46,9 +54,9 @@ object Forms {
   def boolean(name: String, value: Option[Boolean]): FieldFormlet[Option[Boolean]] =
     primitive("boolean", jBool(_), _.isBool, _.bool, name, value)
 
-  def row[A](field: FieldFormlet[A]): ObjectFormlet[A] =
-    field.mapView(_.toJsonObjectBuilder)
-
   def label[A](field: FieldFormlet[A], label: String): FieldFormlet[A] =
     field.mapView(FieldView.label.set(_, label.some))
+
+  def required[A](field: FieldFormlet[Option[A]]): FieldFormlet[A] =
+    field.mapValidation(a => a.toSuccess(List("This field is required")))
 }

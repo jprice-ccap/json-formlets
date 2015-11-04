@@ -2,9 +2,10 @@ package gov.wicourts.json.formlet
 
 import org.specs2.mutable.Specification
 
+import scalaz.std.list._
+import scalaz.syntax.applicative._
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
-import scalaz.syntax.applicative._
 
 import argonaut._
 import argonaut.Argonaut.jNull
@@ -64,6 +65,24 @@ class FormsSpec extends Specification {
       val (_, view) = string("nameL", None).label("Last name").run(jNull)
 
       view.toJson.nospaces must_== """{"nameL":{"metadata":{"label":"Last name"}}}"""
+    }
+
+    "can be required" >> {
+      val (a, _) = string("nameL", None).required.run(jNull)
+
+      a must_== List("This field is required").failure
+    }
+
+    "can be validated" >> {
+      val f = number("count", None)
+        .required
+        .validate(
+          _.success.ensure(List("count must be bigger than 7"))(_.truncateToInt > 7),
+          _.success.ensure(List("count must be less than 5"))(_.truncateToInt < 5)
+        )
+      val (result, _) = f.run(parse("""{"count":6}"""))
+
+      result must_== List("count must be bigger than 7", "count must be less than 5").failure
     }
   }
 
