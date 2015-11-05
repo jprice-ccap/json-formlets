@@ -19,6 +19,8 @@ object JsonArrayBuilder {
     def append(f1: JsonArrayBuilder, f2: => JsonArrayBuilder): JsonArrayBuilder =
       new JsonArrayBuilder(f1.items ++ f2.items)
   }
+
+  def item(json: Json): JsonArrayBuilder = new JsonArrayBuilder(List(json))
 }
 
 class JsonObjectBuilder private [formlet] (

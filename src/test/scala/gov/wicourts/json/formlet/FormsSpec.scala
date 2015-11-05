@@ -118,14 +118,15 @@ class FormsSpec extends Specification {
     }
   }
 
-  "A composite form example" >> {
-    case class FullName(nameF: Option[String], nameL: Option[String])
+  case class FullName(nameF: Option[String], nameL: Option[String])
 
-    def fullNameForm(fullName: FullName): IdObjectFormlet[FullName] =
-      ^(
-        string("nameF", fullName.nameF).row,
-        string("nameL", fullName.nameL).row
-      )(FullName.apply _)
+  def fullNameForm(fullName: FullName): IdObjectFormlet[FullName] =
+    ^(
+      string("nameF", fullName.nameF).row,
+      string("nameL", fullName.nameL).row
+    )(FullName.apply _)
+
+  "A composite form example" >> {
 
     "should be able to render initial data" >> {
       val (_, view) = fullNameForm(FullName("Jack".some, "Sprat".some)).run(jNull)
@@ -158,6 +159,50 @@ class FormsSpec extends Specification {
 
         result must_== FullName("Jack".some, "Sprat".some).success
       }
+
+      "and should associate error information with name" >> {
+        val fullName = FullName(None, None)
+        val json = """{"fullName":{"nameL":1,"nameF":"Jack"}}"""
+        val (result, _) = nested("fullName", fullNameForm(fullName)).run(parse(json))
+
+        val expected = """{"fullName":{"nameL":["Field nameL must be a(n) string"]}}"""
+        result.leftMap(_.toJson.nospaces) must_== expected.failure
+      }
+    }
+  }
+
+  "List forms" >> {
+    val fullNames = list(
+      fullNameForm(FullName(None, None)),
+      List(
+        fullNameForm(FullName("Jack".some, "Sprat".some)),
+        fullNameForm(FullName("Jill".some, "Smith".some))
+      )
+    )
+
+    "should be able to render initial data" >> {
+      val (_, view) = fullNames.run(jNull)
+
+      val expected = """[{"nameL":{"value":"Sprat"},"nameF":{"value":"Jack"}},{"nameL":{"value":"Smith"},"nameF":{"value":"Jill"}}]"""
+
+      view.toJson.nospaces must_== expected
+    }
+
+    "should be able to extract data" >> {
+      val json = """[{"nameL":"Jones"},{"nameL":"Johnson"}]"""
+      val (result, _) = fullNames.run(parse(json))
+
+      result must_== List(FullName(None, "Jones".some), FullName(None, "Johnson".some)).success
+    }
+
+    "should be able to report nested errors properly" >> {
+      val json = """{"fullName":[{"nameL":"Jones"},{"nameL":1},{"nameL":"Jensen"}]}"""
+      val form = nested("fullName", list(fullNameForm(FullName(None, None)), Nil))
+
+      val (result, _) = form.run(parse(json))
+
+      val expected = """{"fullName":[[1,{"nameL":["Field nameL must be a(n) string"]}]]}"""
+      result.leftMap(_.toJson.nospaces) must_== expected.failure
     }
   }
 }

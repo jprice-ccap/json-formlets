@@ -7,6 +7,7 @@ import scalaz._
 import scalaz.OptionT.optionT
 import scalaz.std.list._
 import scalaz.std.option._
+import scalaz.std.tuple._
 import scalaz.syntax.applicative._
 import scalaz.syntax.bind._
 import scalaz.syntax.either._
@@ -44,24 +45,47 @@ object Forms {
       (result, view).point[M]
     }
 
-  def namedContext[M[_], E, A, V](
+  private def namedContext[M[_], E, A, V](
     name: String,
     inner: JsonFormlet[M, E, A, V]
   ): JsonFormlet[M, E, A, V] =
     Formlet(c => inner.run(c.field(name).getOrElse(jNull)))
 
-  def nested[M[_], E, A](
+  def nested[M[_], E <: JsonBuilder, A, V <: JsonBuilder](
     name: String,
-    inner: JsonFormlet[M, E, A, JsonObjectBuilder]
+    inner: JsonFormlet[M, E, A, V]
   )(
     implicit M: Functor[M]
-  ): JsonFormlet[M, E, A, JsonObjectBuilder] =
-    namedContext(name, inner).mapView(o => JsonObjectBuilder.row(name, o.toJson))
+  ): ObjectFormlet[M, A] =
+    namedContext(name, inner).mapResult((r, v) => (
+      r.leftMap(o => JsonObjectBuilder.row(name, o.toJson)),
+      JsonObjectBuilder.row(name, v.toJson)
+    ))
 
-  def nestedList[M[_], E, A](
-    name: String,
-    inner: JsonFormlet[M, E, A, JsonObjectBuilder]
-  ): JsonFormlet[M, E, List[A], JsonObjectBuilder] = ???
+  def listM[M[_], A](
+    template: ObjectFormlet[M, A],
+    defaultValue: List[ObjectFormlet[M, A]]
+  )(
+    implicit M: Applicative[M]
+  ): JsonFormlet[M, JsonArrayBuilder, List[A], JsonArrayBuilder] =
+    Formlet { c =>
+      val l =
+        if (c.isNull)
+          defaultValue.map((c, _))
+        else
+          // XXX should error on non-array
+          c.array.toList.join.map((_, template))
+
+      val X = M
+        .compose[Tuple2[JsonArrayBuilder, ?]]
+        .compose[Validation[JsonArrayBuilder, ?]]
+      M.map(X.traverse(l.zipWithIndex) { case ((i, x), idx) =>
+        M.map(x.mapResult((r, v) => (
+          r.leftMap(o => JsonArrayBuilder.item(Json.array(jNumber(idx), o.toJson))),
+          JsonArrayBuilder.item(v.toJson)
+        )).run(i))(_.swap)
+      })(_.swap)
+    }
 
   def row[M[_], A](
     field: FieldFormlet[M, A]
@@ -225,5 +249,11 @@ object Forms {
       value: Option[Boolean]
     ): IdFieldFormlet[Option[Boolean]] =
       booleanM(name, value)
+
+    def list[E, A](
+      template: IdObjectFormlet[A],
+      defaultValue: List[IdObjectFormlet[A]]
+    ): JsonFormlet[Id, JsonArrayBuilder, List[A], JsonArrayBuilder] =
+      listM[Id, A](template, defaultValue)
   }
 }
