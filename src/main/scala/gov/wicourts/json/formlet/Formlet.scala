@@ -49,7 +49,7 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   )(
     implicit M: Functor[M]
   ): Formlet[M, I, E, B, V] = {
-    // XXX Import here to prevent conflits with applicative syntax
+    // XXX Import here to prevent conflicts with applicative syntax
     import scalaz.syntax.bind._
     mapResult((a, v) => ((a.disjunction >>= (f(_).disjunction)).validation, v))
   }
