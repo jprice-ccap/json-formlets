@@ -5,11 +5,13 @@ import argonaut.Argonaut._
 
 import scalaz.\/
 import scalaz.OptionT.optionT
+import scalaz.std.list._
 import scalaz.std.option._
 import scalaz.syntax.applicative._
 import scalaz.syntax.bind._
 import scalaz.syntax.either._
 import scalaz.syntax.std.option._
+import scalaz.syntax.traverse._
 
 import scalaz.Id.Id
 
@@ -18,7 +20,7 @@ object Forms {
     descr: String,
     toJson: A => Json,
     matches: Json => Boolean,
-    fromJson: Json => Option[A],
+    fromJson: Json => List[String] \/ A,
     name: String,
     value: Option[A]
   ): FieldFormlet[Option[A]] =
@@ -27,12 +29,10 @@ object Forms {
         c.field(name).filterNot(_.isNull).right[List[String]]
       ).flatMapF(j =>
         j.right[List[String]].ensure(
-          List(s"Field $name must be a $descr")
+          List(s"Field $name must be a(n) $descr")
         )(
           matches
-        ) >>= (fromJson(_).toRightDisjunction(
-          List("internal error: expected a $descr")
-        ))
+        ) >>= (fromJson)
       ).run.validation
 
       val view = FieldView(name, (result.toOption.join orElse value).map(toJson), None)
@@ -46,14 +46,76 @@ object Forms {
       v.toJsonObjectBuilder
     ))
 
+  private def check[A](name: String, descr: String, a: Option[A]): List[String] \/ A =
+    a.toRightDisjunction(List(s"Expected a $descr when processing field $name"))
+
+  private def fromArray[A](
+    name: String,
+    descr: String,
+    fromItem: Json => Option[A]
+  ): Json => List[String] \/ List[A] = j =>
+    check(name, s"array of $descr", j.array) >>= (_.traverseU(i => check(name, descr, fromItem(i))))
+
+  def listOfString(name: String, value: Option[List[String]]): FieldFormlet[Option[List[String]]] =
+    primitive(
+      "array of string",
+      l => Json.array(l.map(jString(_)): _*),
+      _.isArray,
+      fromArray(name, "string", _.string),
+      name,
+      value
+    )
+
+  def listOfNumber(name: String, value: Option[List[JsonNumber]]): FieldFormlet[Option[List[JsonNumber]]] =
+    primitive(
+      "array of number",
+      l => Json.array(l.map(jNumber(_)): _*),
+      _.isArray,
+      fromArray(name, "number", _.number),
+      name,
+      value
+    )
+
+  def listOfBoolean(name: String, value: Option[List[Boolean]]): FieldFormlet[Option[List[Boolean]]] =
+    primitive(
+      "array of boolean",
+      l => Json.array(l.map(jBool(_)): _*),
+      _.isArray,
+      fromArray(name, "boolean", _.bool),
+      name,
+      value
+    )
+
   def string(name: String, value: Option[String]): FieldFormlet[Option[String]] =
-    primitive("string", jString(_), _.isString, _.string.map(_.trim), name, value)
+    primitive(
+      "string",
+      jString(_),
+      _.isString,
+      ((_: Json).string.map(_.trim)) andThen (a => check(name, "string", a)),
+      name,
+      value
+    )
 
   def number(name: String, value: Option[JsonNumber]): FieldFormlet[Option[JsonNumber]] =
-    primitive("number", jNumber(_), _.isNumber, _.number, name, value)
+    primitive(
+      "number",
+      jNumber(_),
+      _.isNumber,
+      ((_: Json).number) andThen (a => check(name, "number", a)),
+      name,
+      value
+    )
 
   def boolean(name: String, value: Option[Boolean]): FieldFormlet[Option[Boolean]] =
-    primitive("boolean", jBool(_), _.isBool, _.bool, name, value)
+    primitive(
+      "boolean",
+      jBool(_),
+      _.isBool,
+      ((_: Json).bool) andThen (a => check(name, "boolean", a)),
+
+      name,
+      value
+    )
 
   def label[A](field: FieldFormlet[A], label: String): FieldFormlet[A] =
     field.mapView(FieldView.label.set(_, label.some))

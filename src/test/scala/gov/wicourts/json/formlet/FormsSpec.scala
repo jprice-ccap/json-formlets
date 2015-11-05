@@ -36,7 +36,7 @@ class FormsSpec extends Specification {
         parse("""{"nameL":1}""")
       )
 
-      result.toString must contain("Field nameL must be a string")
+      result.toString must contain("Field nameL must be a(n) string")
     }
 
     "should treat null as empty (good idea?)" >> {
@@ -83,6 +83,37 @@ class FormsSpec extends Specification {
       val (result, _) = f.run(parse("""{"count":6}"""))
 
       result must_== List("count must be bigger than 7", "count must be less than 5").failure
+    }
+  }
+
+  "A string array form" >> {
+    "should be able to render its value" >> {
+      val (_, view) = listOfString("colors", List("red", "blue", "green").some).run(jNull)
+      view.toJson.nospaces must_== """{"colors":{"value":["red","blue","green"]}}"""
+    }
+
+    "should be able to extract its value" >> {
+      val (result, _) = listOfString("colors", None).run(
+        parse("""{"colors":["red","green"]}""")
+      )
+
+      result must_== List("red", "green").some.success
+    }
+
+    "should fail if property is not an array" >> {
+      val (result, _) = listOfString("colors", None).run(
+        parse("""{"colors":1}""")
+      )
+
+      result must_== List("Field colors must be a(n) array of string").failure
+    }
+
+    "should fail if array does not contain required type" >> {
+      val (result, _) = listOfString("colors", None).run(
+        parse("""{"colors":["red", 1]}""")
+      )
+
+      result must_== List("Expected a string when processing field colors").failure
     }
   }
 
