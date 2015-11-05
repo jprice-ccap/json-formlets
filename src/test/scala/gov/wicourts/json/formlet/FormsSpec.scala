@@ -11,6 +11,7 @@ import argonaut._
 import argonaut.Argonaut.jNull
 
 import gov.wicourts.json.formlet.Forms._
+import gov.wicourts.json.formlet.Forms.Id._
 import gov.wicourts.json.formlet.syntax._
 
 class FormsSpec extends Specification {
@@ -120,7 +121,7 @@ class FormsSpec extends Specification {
   "A composite form example" >> {
     case class FullName(nameF: Option[String], nameL: Option[String])
 
-    def fullNameForm(fullName: FullName): ObjectFormlet[FullName] =
+    def fullNameForm(fullName: FullName): IdObjectFormlet[FullName] =
       ^(
         string("nameF", fullName.nameF).row,
         string("nameL", fullName.nameL).row
@@ -139,6 +140,24 @@ class FormsSpec extends Specification {
 
       view.toJson.nospaces must_== """{"nameL":{"value":"Sprat"},"nameF":{"value":"Jack"}}"""
       result must_== FullName("Jack".some, "Sprat".some).success
+    }
+
+    "can be nested" >> {
+      "and should be able to render initial data" >> {
+        val fullName = FullName("Jack".some, "Sprat".some)
+        val (_, view) = nested("fullName", fullNameForm(fullName)).run(jNull)
+
+        val json = """{"fullName":{"nameL":{"value":"Sprat"},"nameF":{"value":"Jack"}}}"""
+        view.toJson.nospaces must_== json
+      }
+
+      "and should be able to extract data" >> {
+        val fullName = FullName(None, None)
+        val json = """{"fullName":{"nameL":"Sprat","nameF":"Jack"}}"""
+        val (result, _) = nested("fullName", fullNameForm(fullName)).run(parse(json))
+
+        result must_== FullName("Jack".some, "Sprat".some).success
+      }
     }
   }
 }

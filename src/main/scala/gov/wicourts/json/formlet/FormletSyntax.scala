@@ -1,16 +1,36 @@
 package gov.wicourts.json.formlet
 
 import scala.language.implicitConversions
+import scala.language.higherKinds
 
-class FieldFormletOps[A](self: FieldFormlet[A]) {
-  def row: ObjectFormlet[A] = Forms.row[A](self)
-  def label(s: String): FieldFormlet[A] = Forms.label(self, s)
+import scalaz.Functor
 
-  def required[B](implicit ev: A <:< Option[B]): FieldFormlet[B] =
+class FieldFormletOps[M[_], A](self: FieldFormlet[M, A])(implicit M: Functor[M]) {
+  def row: ObjectFormlet[M, A] = Forms.row[M, A](self)
+  def label(s: String): FieldFormlet[M, A] = Forms.label(self, s)
+
+  def required[B](implicit ev: A <:< Option[B]): FieldFormlet[M, B] =
     Forms.required(self.map(a => a: Option[B]))
 }
 
-trait ToFieldFormletOps {
-  implicit def FieldFormletToFieldFormletOps[A](v: FieldFormlet[A]): FieldFormletOps[A] =
-    new FieldFormletOps[A](v)
+class IdFieldFormletOps[A](self: IdFieldFormlet[A]) {
+  def row: IdObjectFormlet[A] = Forms.row(self)
+  def label(s: String): IdFieldFormlet[A] = Forms.label(self, s)
+
+  def required[B](implicit ev: A <:< Option[B]): IdFieldFormlet[B] =
+    Forms.required(self.map(a => a: Option[B]))
+}
+
+trait ToFieldFormletOps0 {
+  implicit def FieldFormletToFieldFormletOps[M[_], A](
+    v: FieldFormlet[M, A]
+  )(
+    implicit M: Functor[M]
+  ): FieldFormletOps[M, A] =
+    new FieldFormletOps[M, A](v)
+}
+
+trait ToFieldFormletOps extends ToFieldFormletOps0 {
+  implicit def IdFieldFormletToIdFieldFormletOps[A](v: IdFieldFormlet[A]): IdFieldFormletOps[A] =
+    new IdFieldFormletOps(v)
 }

@@ -3,7 +3,7 @@ package gov.wicourts.json.formlet
 import argonaut._
 import argonaut.Argonaut._
 
-import scalaz.\/
+import scalaz._
 import scalaz.OptionT.optionT
 import scalaz.std.list._
 import scalaz.std.option._
@@ -15,16 +15,20 @@ import scalaz.syntax.traverse._
 
 import scalaz.Id.Id
 
+import scala.language.higherKinds
+
 object Forms {
-  private def primitive[A](
+  private def primitive[M[_], A](
     descr: String,
     toJson: A => Json,
     matches: Json => Boolean,
     fromJson: Json => List[String] \/ A,
     name: String,
     value: Option[A]
-  ): FieldFormlet[Option[A]] =
-    Formlet(c => {
+  )(
+    implicit M: Applicative[M]
+  ): FieldFormlet[M, Option[A]] =
+    Formlet { c =>
       val result = optionT[List[String] \/ ?](
         c.field(name).filterNot(_.isNull).right[List[String]]
       ).flatMapF(j =>
@@ -37,10 +41,33 @@ object Forms {
 
       val view = FieldView(name, (result.toOption.join orElse value).map(toJson), None)
 
-      (result, view).point[Id]
-    })
+      (result, view).point[M]
+    }
 
-  def row[A](field: FieldFormlet[A]): ObjectFormlet[A] =
+  def namedContext[M[_], E, A, V](
+    name: String,
+    inner: JsonFormlet[M, E, A, V]
+  ): JsonFormlet[M, E, A, V] =
+    Formlet(c => inner.run(c.field(name).getOrElse(jNull)))
+
+  def nested[M[_], E, A](
+    name: String,
+    inner: JsonFormlet[M, E, A, JsonObjectBuilder]
+  )(
+    implicit M: Functor[M]
+  ): JsonFormlet[M, E, A, JsonObjectBuilder] =
+    namedContext(name, inner).mapView(o => JsonObjectBuilder.row(name, o.toJson))
+
+  def nestedList[M[_], E, A](
+    name: String,
+    inner: JsonFormlet[M, E, A, JsonObjectBuilder]
+  ): JsonFormlet[M, E, List[A], JsonObjectBuilder] = ???
+
+  def row[M[_], A](
+    field: FieldFormlet[M, A]
+  )(
+    implicit M: Functor[M]
+  ): ObjectFormlet[M, A] =
     field.mapResult((a, v) => (
       a.leftMap(l => JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)): _*))),
       v.toJsonObjectBuilder
@@ -56,7 +83,12 @@ object Forms {
   ): Json => List[String] \/ List[A] = j =>
     check(name, s"array of $descr", j.array) >>= (_.traverseU(i => check(name, descr, fromItem(i))))
 
-  def listOfString(name: String, value: Option[List[String]]): FieldFormlet[Option[List[String]]] =
+  def listOfStringM[M[_]](
+    name: String,
+    value: Option[List[String]]
+  )(
+    implicit M: Applicative[M]
+  ): FieldFormlet[M, Option[List[String]]] =
     primitive(
       "array of string",
       l => Json.array(l.map(jString(_)): _*),
@@ -66,7 +98,12 @@ object Forms {
       value
     )
 
-  def listOfNumber(name: String, value: Option[List[JsonNumber]]): FieldFormlet[Option[List[JsonNumber]]] =
+  def listOfNumberM[M[_]](
+    name: String,
+    value: Option[List[JsonNumber]]
+  )(
+    implicit M: Applicative[M]
+  ): FieldFormlet[M, Option[List[JsonNumber]]] =
     primitive(
       "array of number",
       l => Json.array(l.map(jNumber(_)): _*),
@@ -76,7 +113,12 @@ object Forms {
       value
     )
 
-  def listOfBoolean(name: String, value: Option[List[Boolean]]): FieldFormlet[Option[List[Boolean]]] =
+  def listOfBooleanM[M[_]](
+    name: String,
+    value: Option[List[Boolean]]
+  )(
+    implicit M: Applicative[M]
+  ): FieldFormlet[M, Option[List[Boolean]]] =
     primitive(
       "array of boolean",
       l => Json.array(l.map(jBool(_)): _*),
@@ -86,7 +128,12 @@ object Forms {
       value
     )
 
-  def string(name: String, value: Option[String]): FieldFormlet[Option[String]] =
+  def stringM[M[_]](
+    name: String,
+    value: Option[String]
+  )(
+    implicit M: Applicative[M]
+  ): FieldFormlet[M, Option[String]] =
     primitive(
       "string",
       jString(_),
@@ -96,7 +143,12 @@ object Forms {
       value
     )
 
-  def number(name: String, value: Option[JsonNumber]): FieldFormlet[Option[JsonNumber]] =
+  def numberM[M[_]](
+    name: String,
+    value: Option[JsonNumber]
+  )(
+    implicit M: Applicative[M]
+  ): FieldFormlet[M, Option[JsonNumber]] =
     primitive(
       "number",
       jNumber(_),
@@ -106,7 +158,12 @@ object Forms {
       value
     )
 
-  def boolean(name: String, value: Option[Boolean]): FieldFormlet[Option[Boolean]] =
+  def booleanM[M[_]](
+    name: String,
+    value: Option[Boolean]
+  )(
+    implicit M: Applicative[M]
+  ): FieldFormlet[M, Option[Boolean]] =
     primitive(
       "boolean",
       jBool(_),
@@ -117,9 +174,56 @@ object Forms {
       value
     )
 
-  def label[A](field: FieldFormlet[A], label: String): FieldFormlet[A] =
+  def label[M[_], A](
+    field: FieldFormlet[M, A],
+    label: String
+  )(
+    implicit M: Functor[M]
+  ): FieldFormlet[M, A] =
     field.mapView(FieldView.label.set(_, label.some))
 
-  def required[A](field: FieldFormlet[Option[A]]): FieldFormlet[A] =
+  def required[M[_], A](
+    field: FieldFormlet[M, Option[A]]
+  )(
+    implicit M: Functor[M]
+  ): FieldFormlet[M, A] =
     field.mapValidation(_.toSuccess(List("This field is required")))
+
+  object Id {
+    def listOfString(
+      name: String,
+      value: Option[List[String]]
+    ): IdFieldFormlet[Option[List[String]]] =
+      listOfStringM(name, value)
+
+    def listOfNumber(
+      name: String,
+      value: Option[List[JsonNumber]]
+    ): IdFieldFormlet[Option[List[JsonNumber]]] =
+      listOfNumberM(name, value)
+
+    def listOfBoolean(
+      name: String,
+      value: Option[List[Boolean]]
+    ): IdFieldFormlet[Option[List[Boolean]]] =
+      listOfBooleanM(name, value)
+
+    def string(
+      name: String,
+      value: Option[String]
+    ): IdFieldFormlet[Option[String]] =
+      stringM(name, value)
+
+    def number(
+      name: String,
+      value: Option[JsonNumber]
+    ): IdFieldFormlet[Option[JsonNumber]] =
+      numberM(name, value)
+
+    def boolean(
+      name: String,
+      value: Option[Boolean]
+    ): IdFieldFormlet[Option[Boolean]] =
+      booleanM(name, value)
+  }
 }

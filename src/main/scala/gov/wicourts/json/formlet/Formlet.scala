@@ -44,6 +44,13 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   ): Formlet[M, I, EE, AA, W] =
     Formlet(c => M.map(run(c))(f.tupled))
 
+  def mapResultM[EE, AA, W](
+    f: (Validation[E, A], V) => M[(Validation[EE, AA], W)]
+  )(
+    implicit M: Bind[M]
+  ): Formlet[M, I, EE, AA, W] =
+    Formlet(c => M.bind(run(c))(f.tupled))
+
   def mapValidation[B](
     f: A => Validation[E, B]
   )(
