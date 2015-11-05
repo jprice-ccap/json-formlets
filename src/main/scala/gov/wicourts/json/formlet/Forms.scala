@@ -42,9 +42,7 @@ object Forms {
 
   def row[A](field: FieldFormlet[A]): ObjectFormlet[A] =
     field.mapResult((a, v) => (
-      a.leftMap(
-        l => JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)): _*))
-      ),
+      a.leftMap(l => JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)): _*))),
       v.toJsonObjectBuilder
     ))
 
@@ -61,5 +59,5 @@ object Forms {
     field.mapView(FieldView.label.set(_, label.some))
 
   def required[A](field: FieldFormlet[Option[A]]): FieldFormlet[A] =
-    field.mapValidation(a => a.toSuccess(List("This field is required")))
+    field.mapValidation(_.toSuccess(List("This field is required")))
 }
