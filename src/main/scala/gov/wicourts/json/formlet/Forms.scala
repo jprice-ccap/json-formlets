@@ -51,7 +51,7 @@ object Forms {
   ): JsonFormlet[M, E, A, V] =
     Formlet(c => inner.run(c.field(name).getOrElse(jNull)))
 
-  def nested[M[_], E <: JsonBuilder, A, V <: JsonBuilder](
+  def nestedM[M[_], E <: JsonBuilder, A, V <: JsonBuilder](
     name: String,
     inner: JsonFormlet[M, E, A, V]
   )(
@@ -86,16 +86,6 @@ object Forms {
         )).run(i))(_.swap)
       })(_.swap)
     }
-
-  def row[M[_], A](
-    field: FieldFormlet[M, A]
-  )(
-    implicit M: Functor[M]
-  ): ObjectFormlet[M, A] =
-    field.mapResult((a, v) => (
-      a.leftMap(l => JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)): _*))),
-      v.toJsonObjectBuilder
-    ))
 
   private def check[A](name: String, descr: String, a: Option[A]): List[String] \/ A =
     a.toRightDisjunction(List(s"Expected a $descr when processing field $name"))
@@ -213,6 +203,16 @@ object Forms {
   ): FieldFormlet[M, A] =
     field.mapValidation(_.toSuccess(List("This field is required")))
 
+  def row[M[_], A](
+    field: FieldFormlet[M, A]
+  )(
+    implicit M: Functor[M]
+  ): ObjectFormlet[M, A] =
+    field.mapResult((a, v) => (
+      a.leftMap(l => JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)): _*))),
+      v.toJsonObjectBuilder
+    ))
+
   object Id {
     def listOfString(
       name: String,
@@ -255,5 +255,11 @@ object Forms {
       defaultValue: List[IdObjectFormlet[A]]
     ): JsonFormlet[Id, JsonArrayBuilder, List[A], JsonArrayBuilder] =
       listM[Id, A](template, defaultValue)
+
+    def nested[E <: JsonBuilder, A, V <: JsonBuilder](
+      name: String,
+      inner: JsonFormlet[Id, E, A, V]
+    ): IdObjectFormlet[A] =
+      nestedM[Id, E, A, V](name, inner)
   }
 }
