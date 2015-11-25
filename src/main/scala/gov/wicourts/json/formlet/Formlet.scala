@@ -44,13 +44,6 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   ): Formlet[M, I, EE, AA, W] =
     Formlet(c => M.map(run(c))(f.tupled))
 
-  def mapResultM[EE, AA, W](
-    f: (Validation[E, A], V) => M[(Validation[EE, AA], W)]
-  )(
-    implicit M: Bind[M]
-  ): Formlet[M, I, EE, AA, W] =
-    Formlet(c => M.bind(run(c))(f.tupled))
-
   def mapValidation[B](
     f: A => Validation[E, B]
   )(
@@ -71,6 +64,40 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     val f = X.sequence(nel(h, t.toList))
     mapValidation(f).map(_.head)
   }
+
+  def mapResultM[EE, AA, W](
+    f: (Validation[E, A], V) => M[(Validation[EE, AA], W)]
+  )(
+    implicit M: Bind[M]
+  ): Formlet[M, I, EE, AA, W] =
+    Formlet(c => M.bind(run(c))(f.tupled))
+
+  def mapValidationM[B](
+    f: A => M[Validation[E, B]]
+  )(
+    implicit M: Monad[M]
+  ): Formlet[M, I, E, B, V] = {
+    // XXX Import here to prevent conflicts with applicative syntax
+    import scalaz.syntax.bind._
+    mapResultM((a, v) =>
+      EitherT(M.point(a.disjunction))
+        .flatMapF(f(_) ∘ (_.disjunction))
+        .run
+        .map(r => (r.validation, v))
+    )
+  }
+
+  def validateM(
+    h: A => M[Validation[E, A]],
+    t: (A => M[Validation[E, A]])*
+  )(
+    implicit E: Semigroup[E], M: Monad[M]
+  ): Formlet[M, I, E, A, V] = {
+    val X = Applicative[A => ?].compose[M].compose[Validation[E, ?]]
+    val f = X.sequence(nel(h, t.toList))
+    mapValidationM(f).map(_.head)
+  }
+
 }
 
 object Formlet {

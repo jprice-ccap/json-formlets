@@ -2,6 +2,8 @@ package gov.wicourts.json.formlet
 
 import org.specs2.mutable.Specification
 
+import scalaz.NonEmptyList
+
 import scalaz.std.list._
 import scalaz.syntax.applicative._
 import scalaz.syntax.std.option._
@@ -71,19 +73,19 @@ class FormsSpec extends Specification {
     "can be required" >> {
       val (a, _) = string("nameL", None).required.run(jNull)
 
-      a must_== List("This field is required").failure
+      a must_== NonEmptyList("This field is required").failure
     }
 
     "can be validated" >> {
       val f = number("count", None)
         .required
         .validate(
-          _.success.ensure(List("count must be bigger than 7"))(_.truncateToInt > 7),
-          _.success.ensure(List("count must be less than 5"))(_.truncateToInt < 5)
+          _.success.ensure(NonEmptyList("count must be bigger than 7"))(_.truncateToInt > 7),
+          _.success.ensure(NonEmptyList("count must be less than 5"))(_.truncateToInt < 5)
         )
       val (result, _) = f.run(parse("""{"count":6}"""))
 
-      result must_== List("count must be bigger than 7", "count must be less than 5").failure
+      result must_== NonEmptyList("count must be bigger than 7", "count must be less than 5").failure
     }
   }
 
@@ -106,7 +108,7 @@ class FormsSpec extends Specification {
         parse("""{"colors":1}""")
       )
 
-      result must_== List("Field colors must be a(n) array of string").failure
+      result must_== NonEmptyList("Field colors must be a(n) array of string").failure
     }
 
     "should fail if array does not contain required type" >> {
@@ -114,7 +116,7 @@ class FormsSpec extends Specification {
         parse("""{"colors":["red", 1]}""")
       )
 
-      result must_== List("Expected a string when processing field colors").failure
+      result must_== NonEmptyList("Expected a string when processing field colors").failure
     }
   }
 

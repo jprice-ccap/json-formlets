@@ -23,18 +23,18 @@ object Forms {
     descr: String,
     toJson: A => Json,
     matches: Json => Boolean,
-    fromJson: Json => List[String] \/ A,
+    fromJson: Json => NonEmptyList[String] \/ A,
     name: String,
     value: Option[A]
   )(
     implicit M: Applicative[M]
   ): FieldFormlet[M, Option[A]] =
     Formlet { c =>
-      val result = optionT[List[String] \/ ?](
-        c.field(name).filterNot(_.isNull).right[List[String]]
+      val result = optionT[NonEmptyList[String] \/ ?](
+        c.field(name).filterNot(_.isNull).right[NonEmptyList[String]]
       ).flatMapF(j =>
-        j.right[List[String]].ensure(
-          List(s"Field $name must be a(n) $descr")
+        j.right[NonEmptyList[String]].ensure(
+          NonEmptyList(s"Field $name must be a(n) $descr")
         )(
           matches
         ) >>= (fromJson)
@@ -87,14 +87,14 @@ object Forms {
       })(_.swap)
     }
 
-  private def check[A](name: String, descr: String, a: Option[A]): List[String] \/ A =
-    a.toRightDisjunction(List(s"Expected a $descr when processing field $name"))
+  private def check[A](name: String, descr: String, a: Option[A]): NonEmptyList[String] \/ A =
+    a.toRightDisjunction(NonEmptyList(s"Expected a $descr when processing field $name"))
 
   private def fromArray[A](
     name: String,
     descr: String,
     fromItem: Json => Option[A]
-  ): Json => List[String] \/ List[A] = j =>
+  ): Json => NonEmptyList[String] \/ List[A] = j =>
     check(name, s"array of $descr", j.array) >>= (_.traverseU(i => check(name, descr, fromItem(i))))
 
   def listOfStringM[M[_]](
@@ -201,7 +201,7 @@ object Forms {
   )(
     implicit M: Functor[M]
   ): FieldFormlet[M, A] =
-    field.mapValidation(_.toSuccess(List("This field is required")))
+    field.mapValidation(_.toSuccess(NonEmptyList("This field is required")))
 
   def row[M[_], A](
     field: FieldFormlet[M, A]
@@ -209,7 +209,9 @@ object Forms {
     implicit M: Functor[M]
   ): ObjectFormlet[M, A] =
     field.mapResult((a, v) => (
-      a.leftMap(l => JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)): _*))),
+      a.leftMap(l =>
+        JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)).toList: _*))
+      ),
       v.toJsonObjectBuilder
     ))
 
