@@ -54,12 +54,12 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     mapResult((a, v) => ((a.disjunction >>= (f(_).disjunction)).validation, v))
   }
 
-  def validate(
-    h: A => Validation[E, A],
-    t: (A => Validation[E, A])*
+  def validate[B](
+    h: A => Validation[E, B],
+    t: (A => Validation[E, B])*
   )(
     implicit E: Semigroup[E], M: Applicative[M]
-  ): Formlet[M, I, E, A, V] = {
+  ): Formlet[M, I, E, B, V] = {
     val X = Applicative[A => ?].compose[Validation[E, ?]]
     val f = X.sequence(nel(h, t.toList))
     mapValidation(f).map(_.head)
@@ -87,12 +87,12 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     )
   }
 
-  def validateM(
-    h: A => M[Validation[E, A]],
-    t: (A => M[Validation[E, A]])*
+  def validateM[B](
+    h: A => M[Validation[E, B]],
+    t: (A => M[Validation[E, B]])*
   )(
     implicit E: Semigroup[E], M: Monad[M]
-  ): Formlet[M, I, E, A, V] = {
+  ): Formlet[M, I, E, B, V] = {
     val X = Applicative[A => ?].compose[M].compose[Validation[E, ?]]
     val f = X.sequence(nel(h, t.toList))
     mapValidationM(f).map(_.head)
