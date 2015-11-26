@@ -51,14 +51,14 @@ object Forms {
   ): JsonFormlet[M, E, A, V] =
     Formlet(c => inner.run(c.field(name).getOrElse(jNull)))
 
-  def nestedM[M[_], E <: JsonBuilder, A, V <: JsonBuilder](
+  def nestedM[M[_], A, V <: JsonBuilder](
     name: String,
-    inner: JsonFormlet[M, E, A, V]
+    inner: JsonFormlet[M, ValidationErrors, A, V]
   )(
     implicit M: Functor[M]
   ): ObjectFormlet[M, A] =
     namedContext(name, inner).mapResult((r, v) => (
-      r.leftMap(o => JsonObjectBuilder.row(name, o.toJson)),
+      r.leftMap(x => ValidationErrors.obj(List((name, x)))),
       JsonObjectBuilder.row(name, v.toJson)
     ))
 
@@ -67,7 +67,7 @@ object Forms {
     defaultValue: List[ObjectFormlet[M, A]]
   )(
     implicit M: Applicative[M]
-  ): JsonFormlet[M, JsonArrayBuilder, List[A], JsonArrayBuilder] =
+  ): JsonFormlet[M, ValidationErrors, List[A], JsonArrayBuilder] =
     Formlet { c =>
       val l =
         if (c.isNull)
@@ -78,10 +78,10 @@ object Forms {
 
       val X = M
         .compose[Tuple2[JsonArrayBuilder, ?]]
-        .compose[Validation[JsonArrayBuilder, ?]]
+        .compose[Validation[ValidationErrors, ?]]
       M.map(X.traverse(l.zipWithIndex) { case ((i, x), idx) =>
         M.map(x.mapResult((r, v) => (
-          r.leftMap(o => JsonArrayBuilder.item(Json.array(jNumber(idx), o.toJson))),
+          r.leftMap(o => ValidationErrors.array(List((idx, o)))),
           JsonArrayBuilder.item(v.toJson)
         )).run(i))(_.swap)
       })(_.swap)
@@ -209,9 +209,7 @@ object Forms {
     implicit M: Functor[M]
   ): ObjectFormlet[M, A] =
     field.mapResult((a, v) => (
-      a.leftMap(l =>
-        JsonObjectBuilder.row(v.name, Json.array(l.map(jString(_)).toList: _*))
-      ),
+      a.leftMap(l => ValidationErrors.inner(v.name, l)),
       v.toJsonObjectBuilder
     ))
 
@@ -255,13 +253,13 @@ object Forms {
     def list[E, A](
       template: IdObjectFormlet[A],
       defaultValue: List[IdObjectFormlet[A]]
-    ): JsonFormlet[Id, JsonArrayBuilder, List[A], JsonArrayBuilder] =
+    ): JsonFormlet[Id, ValidationErrors, List[A], JsonArrayBuilder] =
       listM[Id, A](template, defaultValue)
 
-    def nested[E <: JsonBuilder, A, V <: JsonBuilder](
+    def nested[A, V <: JsonBuilder](
       name: String,
-      inner: JsonFormlet[Id, E, A, V]
+      inner: JsonFormlet[Id, ValidationErrors, A, V]
     ): IdObjectFormlet[A] =
-      nestedM[Id, E, A, V](name, inner)
+      nestedM[Id, A, V](name, inner)
   }
 }

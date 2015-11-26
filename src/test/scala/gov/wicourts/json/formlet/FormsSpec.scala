@@ -145,6 +145,25 @@ class FormsSpec extends Specification {
       result must_== FullName("Jack".some, "Sprat".some).success
     }
 
+    "should be able validate whole name, but associate error with one field" >> {
+      val errorForm = fullNameForm(FullName(None, None)).validate(fn =>
+        if (fn.nameL == "Sprat".some && fn.nameF != "Jack".some)
+          ValidationErrors.inner("nameF", NonEmptyList("You must be named Jack")).failure
+        else
+          fn.success
+      )
+
+      val (result1, _) = errorForm.run(
+        parse("""{"nameL":"Sprat","nameF":"Jack"}""")
+      )
+      result1 must_== FullName("Jack".some, "Sprat".some).success
+
+      val (result2, _) = errorForm.run(
+        parse("""{"nameL":"Sprat","nameF":"Jill"}""")
+      )
+      result2.leftMap(_.toJson.nospaces) must_== """{"nameF":["You must be named Jack"]}""".failure
+    }
+
     "can be nested" >> {
       "and should be able to render initial data" >> {
         val fullName = FullName("Jack".some, "Sprat".some)
