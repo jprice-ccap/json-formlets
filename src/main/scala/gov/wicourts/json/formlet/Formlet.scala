@@ -1,6 +1,8 @@
 package gov.wicourts.json.formlet
 
 import scalaz._
+import scalaz.Liskov._
+import scalaz.Id.Id
 
 import scalaz.NonEmptyList.nel
 
@@ -129,6 +131,14 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     val t1 = t.map(f => f(b, _: A))
     validate(h1, t1: _*).run(c)
   }
+
+  def lift[L[_] : Applicative]: Formlet[Lambda[a => L[M[a]]], I, E, A, V] =
+    Formlet[Lambda[a => L[M[a]]], I, E, A, V](c => Applicative[L].point(run(c)))
+
+  def liftId[L[_] : Applicative](
+    implicit ev: this.type <~< Formlet[Id, I, E, A, V]
+  ): Formlet[L, I, E, A, V] =
+    Formlet[L, I, E, A, V](c => Applicative[L].point(ev(this).run(c)))
 }
 
 object Formlet {

@@ -42,7 +42,10 @@ object ValidationErrors {
   private [formlet] def array(errors: List[(Int, ValidationErrors)]): ValidationErrors =
     ArrayErrors(errors)
 
-  def inner(name: String, errors: NonEmptyList[String]): ValidationErrors =
+  def string(name: String, error: String): ValidationErrors =
+    ObjectErrors(List((name, FieldErrors(NonEmptyList(error)))))
+
+  def list(name: String, errors: NonEmptyList[String]): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(errors))))
 
   implicit val validationErrorsMonoid: Monoid[ValidationErrors] = new Monoid[ValidationErrors] {

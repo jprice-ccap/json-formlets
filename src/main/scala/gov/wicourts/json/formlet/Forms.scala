@@ -209,7 +209,7 @@ object Forms {
     implicit M: Functor[M]
   ): ObjectFormlet[M, A] =
     field.mapResult((a, v) => (
-      a.leftMap(l => ValidationErrors.inner(v.name, l)),
+      a.leftMap(l => ValidationErrors.list(v.name, l)),
       v.obj
     ))
 
