@@ -11,7 +11,7 @@ import scalaz.syntax.std.option._
 import scalaz.{@>, Lens}
 
 case class FieldView(name: String, value: Option[Json], label: Option[String]) {
-  def toJsonObjectBuilder: JsonObjectBuilder = {
+  def obj: JsonObjectBuilder = {
     val metadataItems =
       List(
         label.map(l => ("label", jString(l)))
@@ -31,9 +31,7 @@ case class FieldView(name: String, value: Option[Json], label: Option[String]) {
     }.orZero
   }
 
-  def row: JsonObjectBuilder = toJsonObjectBuilder
-
-  def toJson: Json = toJsonObjectBuilder.toJson
+  def toJson: Json = obj.toJson
 }
 
 object FieldView {

@@ -98,6 +98,37 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     mapValidationM(f).map(_.head)
   }
 
+  def value(implicit M: Functor[M]): I => M[Option[A]] = i =>
+    M.map(this.eval(i))(_.toOption)
+
+  def validateVM[B, C](
+    other: I => M[B]
+  )(
+    h: (B, A) => M[Validation[E, C]],
+    t: ((B, A) => M[Validation[E, C]])*
+  )(
+    implicit E: Semigroup[E], M: Monad[M]
+  ): Formlet[M, I, E, C, V] = Formlet { c =>
+    M.bind(other(c)) { b =>
+      val h1 = h(b, _: A)
+      val t1 = t.map(f => f(b, _: A))
+      validateM(h1, t1: _*).run(c)
+    }
+  }
+
+  def validateV[B, C](
+    other: I => B
+  )(
+    h: (B, A) => Validation[E, C],
+    t: ((B, A) => Validation[E, C])*
+  )(
+    implicit E: Semigroup[E], M: Monad[M]
+  ): Formlet[M, I, E, C, V] = Formlet { c =>
+    val b = other(c)
+    val h1 = h(b, _: A)
+    val t1 = t.map(f => f(b, _: A))
+    validate(h1, t1: _*).run(c)
+  }
 }
 
 object Formlet {

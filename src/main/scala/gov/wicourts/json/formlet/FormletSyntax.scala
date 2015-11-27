@@ -6,7 +6,7 @@ import scala.language.higherKinds
 import scalaz.Functor
 
 class FieldFormletOps[M[_], A](self: FieldFormlet[M, A])(implicit M: Functor[M]) {
-  def row: ObjectFormlet[M, A] = Forms.row[M, A](self)
+  def obj: ObjectFormlet[M, A] = Forms.obj[M, A](self)
   def label(s: String): FieldFormlet[M, A] = Forms.label(self, s)
 
   def required[B](implicit ev: A <:< Option[B]): FieldFormlet[M, B] =
@@ -14,7 +14,7 @@ class FieldFormletOps[M[_], A](self: FieldFormlet[M, A])(implicit M: Functor[M])
 }
 
 class IdFieldFormletOps[A](self: IdFieldFormlet[A]) {
-  def row: IdObjectFormlet[A] = Forms.row(self)
+  def obj: IdObjectFormlet[A] = Forms.obj(self)
   def label(s: String): IdFieldFormlet[A] = Forms.label(self, s)
 
   def required[B](implicit ev: A <:< Option[B]): IdFieldFormlet[B] =

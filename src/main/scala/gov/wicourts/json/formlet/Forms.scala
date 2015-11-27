@@ -203,14 +203,14 @@ object Forms {
   ): FieldFormlet[M, A] =
     field.mapValidation(_.toSuccess(NonEmptyList("This field is required")))
 
-  def row[M[_], A](
+  def obj[M[_], A](
     field: FieldFormlet[M, A]
   )(
     implicit M: Functor[M]
   ): ObjectFormlet[M, A] =
     field.mapResult((a, v) => (
       a.leftMap(l => ValidationErrors.inner(v.name, l)),
-      v.toJsonObjectBuilder
+      v.obj
     ))
 
   object Id {

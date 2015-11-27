@@ -2,9 +2,11 @@ package gov.wicourts.json.formlet
 
 import org.specs2.mutable.Specification
 
-import scalaz.NonEmptyList
+import scalaz.{Bind, NonEmptyList}
+import scalaz.Id.Id
 
 import scalaz.std.list._
+import scalaz.std.option._
 import scalaz.syntax.applicative._
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
@@ -124,8 +126,8 @@ class FormsSpec extends Specification {
 
   def fullNameForm(fullName: FullName): IdObjectFormlet[FullName] =
     ^(
-      string("nameF", fullName.nameF).row,
-      string("nameL", fullName.nameL).row
+      string("nameF", fullName.nameF).obj,
+      string("nameL", fullName.nameL).obj
     )(FullName.apply _)
 
   "A composite form example" >> {
@@ -145,7 +147,7 @@ class FormsSpec extends Specification {
       result must_== FullName("Jack".some, "Sprat".some).success
     }
 
-    "should be able validate whole name, but associate error with one field" >> {
+    "should be able to validate whole name, but associate error with one field" >> {
       val errorForm = fullNameForm(FullName(None, None)).validate(fn =>
         if (fn.nameL == "Sprat".some && fn.nameF != "Jack".some)
           ValidationErrors.inner("nameF", NonEmptyList("You must be named Jack")).failure
@@ -162,6 +164,52 @@ class FormsSpec extends Specification {
         parse("""{"nameL":"Sprat","nameF":"Jill"}""")
       )
       result2.leftMap(_.toJson.nospaces) must_== """{"nameF":["You must be named Jack"]}""".failure
+    }
+
+    "should be able to validate field based on other field value" >> {
+      def checkResults(both: IdObjectFormlet[(Option[String], Option[String])]) = {
+        val (result1, _) = both.run(
+          parse("""{"nameL":"Sprat","nameF":"Jack"}""")
+        )
+        result1 must_== ("Jack".some, "Sprat".some).success
+
+        val (result2, _) = both.run(
+          parse("""{"nameL":"Sprat","nameF":"Jill"}""")
+        )
+        result2.leftMap(_.toJson.nospaces) must_==
+          """{"nameL":["If your last name is Sprat, your first name must be Jack"]}""".failure
+      }
+
+      "in M" >> {
+        val nameF = string("nameF", None)
+        val nameL = string("nameL", None).validateVM(nameF.value) { (other, s) =>
+          if (s.exists(_ == "Sprat") && ! Bind[Option].join(other).exists(_ == "Jack"))
+            "If your last name is Sprat, your first name must be Jack"
+              .failure
+              .toValidationNel
+              .point[Id]
+          else
+            s.success
+        }
+        val both = ^(nameF.obj, nameL.obj)((_, _))
+
+        checkResults(both)
+      }
+
+      "in id" >> {
+        val nameF = string("nameF", None)
+        val nameL = string("nameL", None).validateV(nameF.value) { (other, s) =>
+          if (s.exists(_ == "Sprat") && ! Bind[Option].join(other).exists(_ == "Jack"))
+            "If your last name is Sprat, your first name must be Jack"
+              .failure
+              .toValidationNel
+          else
+            s.success
+        }
+        val both = ^(nameF.obj, nameL.obj)((_, _))
+
+        checkResults(both)
+      }
     }
 
     "can be nested" >> {
