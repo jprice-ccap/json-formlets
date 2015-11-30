@@ -1,15 +1,23 @@
 package gov.wicourts.json.formlet
 
+import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
-import scalaz.NonEmptyList
+import scalaz.{Apply, NonEmptyList, Monoid}
+import scalaz.NonEmptyList.nel
 
 import argonaut._
 import argonaut.Argonaut.jNull
 
+import scalaz.syntax.equal._
+import scalaz.syntax.monad._
 import scalaz.syntax.monoid._
+import scalaz.scalacheck.ScalazProperties._
+import scalaz.scalacheck.ScalazArbitrary._
 
-class ValidationErrorsSpec extends Specification {
+import org.scalacheck.{Gen, Arbitrary}
+
+class ValidationErrorsSpec extends Specification with ScalaCheck {
   "Fields errors" >> {
     "can render themselves to JSON" >> {
       val errors = ValidationErrors.field(NonEmptyList("a", "b"))
@@ -67,6 +75,31 @@ class ValidationErrorsSpec extends Specification {
         10 -> ValidationErrors.field(NonEmptyList("b"))
       ))
       (errors |+| other).toJson.nospaces must_== """[[1,["a","a"]],[99,["b"]],[10,["b"]]]"""
+    }
+  }
+
+  "Type class laws" >> {
+    implicit val arbitraryValidationErrors: Arbitrary[ValidationErrors] = Arbitrary {
+      def genValidationErrors(arraySize: Int): Gen[ValidationErrors] =
+        Gen.frequency[ValidationErrors](
+          1 -> ^(Gen.alphaStr, Gen.listOf(Gen.alphaStr))((h, t) => FieldErrors(nel(h, t))),
+          1 -> Gen.listOfN(arraySize, Apply[Gen].tuple2(Gen.alphaStr, genValidationErrors(arraySize/2))).map(l =>
+            ObjectErrors(l)
+          ),
+          1 -> Gen.listOfN(arraySize, ^(Gen.choose(1, 10), genValidationErrors(arraySize/2))((_, _))).map(l =>
+            ArrayErrors(l)
+          )
+        )
+
+      genValidationErrors(4)
+    }
+
+    "Monoid" >> {
+      monoid.laws[ValidationErrors]
+    }
+
+    "Equal" >> {
+      equal.laws[ValidationErrors]
     }
   }
 }

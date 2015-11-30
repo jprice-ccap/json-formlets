@@ -11,6 +11,7 @@ import scalaz.State._
 import scalaz.std.anyVal._
 import scalaz.std.list._
 import scalaz.std.string._
+import scalaz.std.tuple._
 
 import scalaz.syntax.equal._
 import scalaz.syntax.monoid._
@@ -48,6 +49,17 @@ object ValidationErrors {
   def list(name: String, errors: NonEmptyList[String]): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(errors))))
 
+  implicit val validationErrorsEqual: Equal[ValidationErrors] = new Equal[ValidationErrors] {
+    def equal(a1: ValidationErrors, a2: ValidationErrors): Boolean = {
+      (a1, a2) match {
+        case (FieldErrors(l1), FieldErrors(l2)) => l1.toList.sorted === l2.toList.sorted
+        case (ArrayErrors(l1), ArrayErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
+        case (ObjectErrors(l1), ObjectErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
+        case (_, _) => false
+      }
+    }
+  }
+
   implicit val validationErrorsMonoid: Monoid[ValidationErrors] = new Monoid[ValidationErrors] {
     def zero: ValidationErrors = ObjectErrors(Nil)
 
@@ -75,8 +87,8 @@ object ValidationErrors {
         case (FieldErrors(l1), FieldErrors(l2)) => FieldErrors(l1 |+| l2)
         case (ObjectErrors(e1), ObjectErrors(e2)) => ObjectErrors(merge(e1, e2))
         case (ArrayErrors(e1), ArrayErrors(e2)) => ArrayErrors(merge(e1, e2))
-        case (_, o@ObjectErrors(_)) => o
-        case (o@ObjectErrors(_), _) => o
+        case (_, f@FieldErrors(_)) => f
+        case (f@FieldErrors(_), _) => f
         case (_, a@ArrayErrors(_)) => a
         case (a@ArrayErrors(_), _) => a
       }
