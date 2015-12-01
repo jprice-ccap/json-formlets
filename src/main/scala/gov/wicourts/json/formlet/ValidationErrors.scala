@@ -49,16 +49,14 @@ object ValidationErrors {
   def list(name: String, errors: NonEmptyList[String]): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(errors))))
 
-  implicit val validationErrorsEqual: Equal[ValidationErrors] = new Equal[ValidationErrors] {
-    def equal(a1: ValidationErrors, a2: ValidationErrors): Boolean = {
-      (a1, a2) match {
-        case (FieldErrors(l1), FieldErrors(l2)) => l1.toList.sorted === l2.toList.sorted
-        case (ArrayErrors(l1), ArrayErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
-        case (ObjectErrors(l1), ObjectErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
-        case (_, _) => false
-      }
+  implicit val validationErrorsEqual: Equal[ValidationErrors] = Equal.equal((a1, a2) =>
+    (a1, a2) match {
+      case (FieldErrors(l1), FieldErrors(l2)) => l1.toList.sorted === l2.toList.sorted
+      case (ArrayErrors(l1), ArrayErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
+      case (ObjectErrors(l1), ObjectErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
+      case (_, _) => false
     }
-  }
+  )
 
   implicit val validationErrorsMonoid: Monoid[ValidationErrors] = new Monoid[ValidationErrors] {
     def zero: ValidationErrors = ObjectErrors(Nil)

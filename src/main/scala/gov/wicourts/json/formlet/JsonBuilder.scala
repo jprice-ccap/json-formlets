@@ -47,7 +47,7 @@ object JsonObjectBuilder {
       new JsonObjectBuilder(f1.items ++ f2.items)
   }
 
-  implicit val json: Equal[JsonObjectBuilder] = Equal.equal((a1, a2) =>
+  implicit val jsonObjectBuildEqual: Equal[JsonObjectBuilder] = Equal.equal((a1, a2) =>
     a1.items === a2.items
   )
 
