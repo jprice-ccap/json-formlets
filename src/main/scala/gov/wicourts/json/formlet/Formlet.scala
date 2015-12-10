@@ -25,6 +25,16 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   def map[B](f: A => B)(implicit M: Functor[M]): Formlet[M, I, E, B, V] =
     mapResult((result, view) => (result map f, view))
 
+  def mapK[G[_], EE, AA, VV](
+    f: M[(Validation[E, A], V)] => G[(Validation[EE, AA], VV)]
+  ): Formlet[G, I, EE, AA, VV] = Formlet(c =>
+    f(run(c))
+  )
+
+  def mapK_[G[_], B](
+    f: M[(Validation[E, A], V)] => G[(Validation[E, B], V)]
+  ): Formlet[G, I, E, B, V] = mapK(f)
+
   def ap[B](
     f: => Formlet[M, I, E, A => B, V]
   )(
@@ -124,7 +134,7 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     h: (B, A) => Validation[E, C],
     t: ((B, A) => Validation[E, C])*
   )(
-    implicit E: Semigroup[E], M: Monad[M]
+    implicit E: Semigroup[E], M: Applicative[M]
   ): Formlet[M, I, E, C, V] = Formlet { c =>
     val b = other(c)
     val h1 = h(b, _: A)
