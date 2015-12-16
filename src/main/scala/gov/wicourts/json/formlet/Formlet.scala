@@ -8,6 +8,7 @@ import scalaz.NonEmptyList.nel
 
 import scalaz.std.function._
 import scalaz.std.list._
+import scalaz.std.option._
 import scalaz.syntax.applicative._
 import scalaz.syntax.monoid._
 import scalaz.syntax.traverse1._
@@ -112,6 +113,9 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
 
   def value(implicit M: Functor[M]): I => M[Option[A]] = i =>
     M.map(this.eval(i))(_.toOption)
+
+  def valueOpt[B](implicit M: Functor[M], ev: A <~< Option[B]): I => M[Option[B]] = i =>
+    M.map(this.eval(i))(v => Monad[Option].join(v.toOption.map(ev(_))))
 
   def validateVM[B, C](
     other: I => M[B]

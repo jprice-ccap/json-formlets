@@ -208,6 +208,22 @@ class FormsSpec extends Specification {
         checkResults(both)
       }
 
+      "in M (joining on optional value)" >> {
+        val nameF = string("nameF", None)
+        val nameL = string("nameL", None).validateVM(nameF.valueOpt) { (other, s) =>
+          if (s.exists(_ == "Sprat") && ! other.exists(_ == "Jack"))
+            "If your last name is Sprat, your first name must be Jack"
+              .failure
+              .toValidationNel
+              .point[Id]
+          else
+            s.success
+        }
+        val both = ^(nameF.obj, nameL.obj)((_, _))
+
+        checkResults(both)
+      }
+
       "in id" >> {
         val nameF = string("nameF", None)
         val nameL = string("nameL", None).validateV(nameF.value) { (other, s) =>
