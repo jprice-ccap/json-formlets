@@ -43,20 +43,41 @@ object ValidationErrors {
   private [formlet] def array(errors: List[(Int, ValidationErrors)]): ValidationErrors =
     ArrayErrors(errors)
 
+  def dedup(errors: ValidationErrors): ValidationErrors = {
+    def dedup_[A](l: List[(A, ValidationErrors)]): List[(A, ValidationErrors)] =
+      l.groupBy(_._1).toList.map { case (s, vs) =>
+        (s, dedup(vs.map(_._2).suml))
+      }
+
+    errors match {
+      case FieldErrors(l) => FieldErrors(l.distinct)
+      case ObjectErrors(l) => ObjectErrors(dedup_(l))
+      case ArrayErrors(l) => ArrayErrors(dedup_(l))
+    }
+  }
+
   def string(name: String, error: String): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(NonEmptyList(error)))))
 
   def list(name: String, errors: NonEmptyList[String]): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(errors))))
 
-  implicit val validationErrorsEqual: Equal[ValidationErrors] = Equal.equal((a1, a2) =>
+  def relabel(errors: ValidationErrors, from: String, to: String): ValidationErrors =
+    errors match {
+      case ObjectErrors(errors) => ObjectErrors(
+        errors.map { case (k, v) => if (k === from) (to, v) else (k, v) }
+      )
+      case v => v
+    }
+
+  implicit val validationErrorsEqual: Equal[ValidationErrors] = Equal.equal((a1, a2) => {
     (a1, a2) match {
       case (FieldErrors(l1), FieldErrors(l2)) => l1.toList.sorted === l2.toList.sorted
       case (ArrayErrors(l1), ArrayErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
       case (ObjectErrors(l1), ObjectErrors(l2)) => l1.sortBy(_._1) === l2.sortBy(_._1)
       case (_, _) => false
     }
-  )
+  })
 
   implicit val validationErrorsMonoid: Monoid[ValidationErrors] = new Monoid[ValidationErrors] {
     def zero: ValidationErrors = ObjectErrors(Nil)

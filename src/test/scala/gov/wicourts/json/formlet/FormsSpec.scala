@@ -101,6 +101,14 @@ class FormsSpec extends Specification {
 
       r must_== Some(None.success)
     }
+
+    "can associate an error with another field" >> {
+      val r = string("nameL", None)
+        .mapValidation(o => "Nope".failureNel[String])
+        .errorName("nameLOther")
+      val results = r.obj.eval(jNull)
+      results.leftMap(_.toJson.nospaces) must_== """{"nameLOther":["Nope"]}""".failure
+    }
   }
 
   "A string array form" >> {

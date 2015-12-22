@@ -10,7 +10,7 @@ import scalaz.syntax.std.option._
 
 import scalaz.{@>, Lens}
 
-case class FieldView(name: String, value: Option[Json], label: Option[String]) {
+case class FieldView(name: String, value: Option[Json], label: Option[String], errorName: String) {
   def obj: JsonObjectBuilder = {
     val metadataItems =
       List(
@@ -39,5 +39,11 @@ object FieldView {
     Lens.lensu[FieldView, Option[String]](
       (a, value) => a.copy(label = value),
       _.label
+    )
+
+  val errorName: FieldView @> String =
+    Lens.lensu[FieldView, String](
+      (a, value) => a.copy(errorName = value),
+      _.errorName
     )
 }

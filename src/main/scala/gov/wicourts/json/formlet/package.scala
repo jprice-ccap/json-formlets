@@ -17,5 +17,5 @@ package object formlet {
 
   type JsonFormlet[M[_], E, A, V] = Formlet[M, Json, E, A, V]
 
-  object syntax extends ToFieldFormletOps
+  object syntax extends ToFieldFormletOps with ToObjectFormletOps
 }

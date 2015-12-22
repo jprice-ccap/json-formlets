@@ -19,15 +19,13 @@ import scalaz.Id.Id
 import scala.language.higherKinds
 
 object Forms {
-  private def primitive[M[_], A](
+  private def primitive[M[_]: Applicative, A](
     descr: String,
     toJson: A => Json,
     matches: Json => Boolean,
     fromJson: Json => NonEmptyList[String] \/ A,
     name: String,
     value: Option[A]
-  )(
-    implicit M: Applicative[M]
   ): FieldFormlet[M, Option[A]] =
     Formlet { c =>
       val result = optionT[NonEmptyList[String] \/ ?](
@@ -40,7 +38,7 @@ object Forms {
         ) >>= (fromJson)
       ).run.validation
 
-      val view = FieldView(name, (result.toOption.join orElse value).map(toJson), None)
+      val view = FieldView(name, (result.toOption.join orElse value).map(toJson), None, name)
 
       (result, view).point[M]
     }
@@ -51,11 +49,9 @@ object Forms {
   ): JsonFormlet[M, E, A, V] =
     Formlet(c => inner.run(c.field(name).getOrElse(jNull)))
 
-  def nestedM[M[_], A, V <: JsonBuilder](
+  def nestedM[M[_] : Functor, A, V <: JsonBuilder](
     name: String,
     inner: JsonFormlet[M, ValidationErrors, A, V]
-  )(
-    implicit M: Functor[M]
   ): ObjectFormlet[M, A] =
     namedContext(name, inner).mapResult((r, v) => (
       r.leftMap(x => ValidationErrors.obj(List((name, x)))),
@@ -97,11 +93,9 @@ object Forms {
   ): Json => NonEmptyList[String] \/ List[A] = j =>
     check(name, s"array of $descr", j.array) >>= (_.traverseU(i => check(name, descr, fromItem(i))))
 
-  def listOfStringM[M[_]](
+  def listOfStringM[M[_] : Applicative](
     name: String,
     value: Option[List[String]]
-  )(
-    implicit M: Applicative[M]
   ): FieldFormlet[M, Option[List[String]]] =
     primitive(
       "array of string",
@@ -112,11 +106,9 @@ object Forms {
       value
     )
 
-  def listOfNumberM[M[_]](
+  def listOfNumberM[M[_] : Applicative](
     name: String,
     value: Option[List[JsonNumber]]
-  )(
-    implicit M: Applicative[M]
   ): FieldFormlet[M, Option[List[JsonNumber]]] =
     primitive(
       "array of number",
@@ -127,11 +119,9 @@ object Forms {
       value
     )
 
-  def listOfBooleanM[M[_]](
+  def listOfBooleanM[M[_] : Applicative](
     name: String,
     value: Option[List[Boolean]]
-  )(
-    implicit M: Applicative[M]
   ): FieldFormlet[M, Option[List[Boolean]]] =
     primitive(
       "array of boolean",
@@ -142,11 +132,9 @@ object Forms {
       value
     )
 
-  def stringM[M[_]](
+  def stringM[M[_] : Applicative](
     name: String,
     value: Option[String]
-  )(
-    implicit M: Applicative[M]
   ): FieldFormlet[M, Option[String]] =
     primitive(
       "string",
@@ -157,11 +145,9 @@ object Forms {
       value
     )
 
-  def numberM[M[_]](
+  def numberM[M[_] : Applicative](
     name: String,
     value: Option[JsonNumber]
-  )(
-    implicit M: Applicative[M]
   ): FieldFormlet[M, Option[JsonNumber]] =
     primitive(
       "number",
@@ -172,11 +158,9 @@ object Forms {
       value
     )
 
-  def booleanM[M[_]](
+  def booleanM[M[_] : Applicative](
     name: String,
     value: Option[Boolean]
-  )(
-    implicit M: Applicative[M]
   ): FieldFormlet[M, Option[Boolean]] =
     primitive(
       "boolean",
@@ -188,28 +172,34 @@ object Forms {
       value
     )
 
-  def label[M[_], A](
+  def label[M[_] : Functor, A](
     field: FieldFormlet[M, A],
     label: String
-  )(
-    implicit M: Functor[M]
   ): FieldFormlet[M, A] =
     field.mapView(FieldView.label.set(_, label.some))
 
-  def required[M[_], A](
+  def errorName[M[_] : Functor, A](
+    field: FieldFormlet[M, A],
+    errorName: String
+  ): FieldFormlet[M, A] =
+    field.mapView(FieldView.errorName.set(_, errorName))
+
+  def required[M[_] : Functor, A](
     field: FieldFormlet[M, Option[A]]
-  )(
-    implicit M: Functor[M]
   ): FieldFormlet[M, A] =
     field.mapValidation(_.toSuccess(NonEmptyList("This field is required")))
 
-  def obj[M[_], A](
+  def requiredObj[M[_] : Functor, A](
+    name: String,
+    obj: ObjectFormlet[M, Option[A]]
+  ): ObjectFormlet[M, A] =
+    obj.mapValidation(_.toSuccess(ValidationErrors.string(name, "This field is required")))
+
+  def obj[M[_] : Functor, A](
     field: FieldFormlet[M, A]
-  )(
-    implicit M: Functor[M]
   ): ObjectFormlet[M, A] =
     field.mapResult((a, v) => (
-      a.leftMap(l => ValidationErrors.list(v.name, l)),
+      a.leftMap(l => ValidationErrors.list(v.errorName, l)),
       v.obj
     ))
 

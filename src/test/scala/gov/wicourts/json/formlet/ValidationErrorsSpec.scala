@@ -9,6 +9,7 @@ import scalaz.NonEmptyList.nel
 import argonaut._
 import argonaut.Argonaut.jNull
 
+import scalaz.Equal
 import scalaz.syntax.equal._
 import scalaz.syntax.monad._
 import scalaz.syntax.monoid._
@@ -30,6 +31,13 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
       val e2 = ValidationErrors.field(NonEmptyList("b"))
 
       (e1 |+| e2).toJson.nospaces must_== """["a","b"]"""
+    }
+
+    "can be deduped" >> {
+      val in = ValidationErrors.field(NonEmptyList("a", "b", "c", "b"))
+      val out = ValidationErrors.field(NonEmptyList("c", "b", "a"))
+
+      Equal[ValidationErrors].equal(ValidationErrors.dedup(in), out) must_== true
     }
   }
 
@@ -57,6 +65,21 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
 
       (errors |+| other).toJson.nospaces must_== """{"field1":["a","d"],"field2":["b"],"obj1":{"field3":["c","x"]},"field4":["b"]}"""
     }
+
+    "can be deduped" >> {
+      val in = ValidationErrors.obj(List(
+        "field1" -> ValidationErrors.field(NonEmptyList("a", "c")),
+        "field1" -> ValidationErrors.field(NonEmptyList("a")),
+        "field2" -> ValidationErrors.field(NonEmptyList("b"))
+      ))
+
+      val out = ValidationErrors.obj(List(
+        "field1" -> ValidationErrors.field(NonEmptyList("a", "c")),
+        "field2" -> ValidationErrors.field(NonEmptyList("b"))
+      ))
+
+      Equal[ValidationErrors].equal(ValidationErrors.dedup(in), out) must_== true
+    }
   }
 
   "Array errors" >> {
@@ -75,6 +98,21 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
         10 -> ValidationErrors.field(NonEmptyList("b"))
       ))
       (errors |+| other).toJson.nospaces must_== """[[1,["a","a"]],[99,["b"]],[10,["b"]]]"""
+    }
+
+    "can be deduped" >> {
+      val in = ValidationErrors.array(List(
+        1 -> ValidationErrors.field(NonEmptyList("a", "c")),
+        1 -> ValidationErrors.field(NonEmptyList("a")),
+        2 -> ValidationErrors.field(NonEmptyList("b"))
+      ))
+
+      val out = ValidationErrors.array(List(
+        1 -> ValidationErrors.field(NonEmptyList("a", "c")),
+        2 -> ValidationErrors.field(NonEmptyList("b"))
+      ))
+
+      Equal[ValidationErrors].equal(ValidationErrors.dedup(in), out) must_== true
     }
   }
 

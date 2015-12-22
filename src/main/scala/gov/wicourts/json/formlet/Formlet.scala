@@ -23,6 +23,12 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   def view(i: I)(implicit M: Functor[M]): M[V] =
     M.map(run(i))(_._2)
 
+  def bimap[B, C](f: E => B, g: A => C)(implicit M: Functor[M]): Formlet[M, I, B, C, V] =
+    mapResult((result, view) => (result bimap (f, g), view))
+
+  def leftMap[B](f: E => B)(implicit M: Functor[M]): Formlet[M, I, B, A, V] =
+    bimap(f, identity)
+
   def map[B](f: A => B)(implicit M: Functor[M]): Formlet[M, I, E, B, V] =
     mapResult((result, view) => (result map f, view))
 
@@ -156,6 +162,12 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
 }
 
 object Formlet {
+  implicit def formletBifunctor[M[_] : Functor, I, V ]: Bifunctor[Formlet[M, I, ?, ?, V]] =
+    new Bifunctor[Formlet[M, I, ?, ?, V]] {
+      def bimap[A, B, C, D](fab: Formlet[M, I, A, B, V])(f: A => C, g: B => D): Formlet[M, I, C, D, V] =
+        fab.bimap(f, g)
+    }
+
   implicit def formletApplicative[
     M[_] : Applicative,
     I,
