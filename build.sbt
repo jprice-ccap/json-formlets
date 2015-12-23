@@ -2,7 +2,7 @@ name := "json-formlets"
 
 organization := "gov.wicourts"
 
-version := "0.1.8-SNAPSHOT"
+version := "0.1.8"
 
 scalaVersion := "2.11.7"
 
