@@ -26,11 +26,11 @@ private case class FieldErrors(errors: NonEmptyList[String]) extends ValidationE
 }
 
 private case class ObjectErrors(errors: List[(String, ValidationErrors)]) extends ValidationErrors {
-  def toJson: Json = Json.obj(errors.map { case (n, e) => (n, e.toJson) }.toList: _*)
+  def toJson: Json = Json.obj(errors.map { case (n, e) => (n, e.toJson) }: _*)
 }
 
 private case class ArrayErrors(errors: List[(Int, ValidationErrors)]) extends ValidationErrors {
-  def toJson: Json = Json.array(errors.map { case (n, e) => Json.array(jNumber(n), e.toJson) }.toList: _*)
+  def toJson: Json = Json.array(errors.sortBy(_._1).foldLeft(List.empty[Json]){ case (l, (n, e)) => l.padTo(n, Json.jNull) :+ e.toJson }: _*)
 }
 
 object ValidationErrors {

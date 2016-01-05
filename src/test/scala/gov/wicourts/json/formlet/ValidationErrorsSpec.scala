@@ -85,19 +85,19 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
   "Array errors" >> {
     val errors = ValidationErrors.array(List(
       1 -> ValidationErrors.field(NonEmptyList("a")),
-      99 -> ValidationErrors.field(NonEmptyList("b"))
+      4 -> ValidationErrors.field(NonEmptyList("b"))
     ))
 
     "can render themselves to JSON" >> {
-      errors.toJson.nospaces must_== """[[1,["a"]],[99,["b"]]]"""
+      errors.toJson.nospaces must_== """[null,["a"],null,null,["b"]]"""
     }
 
     "can be added" >> {
       val other = ValidationErrors.array(List(
         1 -> ValidationErrors.field(NonEmptyList("a")),
-        10 -> ValidationErrors.field(NonEmptyList("b"))
+        6 -> ValidationErrors.field(NonEmptyList("c"))
       ))
-      (errors |+| other).toJson.nospaces must_== """[[1,["a","a"]],[99,["b"]],[10,["b"]]]"""
+      (errors |+| other).toJson.nospaces must_== """[null,["a","a"],null,null,["b"],null,["c"]]"""
     }
 
     "can be deduped" >> {

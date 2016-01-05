@@ -306,7 +306,7 @@ class FormsSpec extends Specification {
 
       val result = form.eval(parse(json))
 
-      val expected = """{"fullName":[[1,{"nameL":["Field nameL must be a(n) string"]}]]}"""
+      val expected = """{"fullName":[null,{"nameL":["Field nameL must be a(n) string"]}]}"""
       result.leftMap(_.toJson.nospaces) must_== expected.failure
     }
   }
