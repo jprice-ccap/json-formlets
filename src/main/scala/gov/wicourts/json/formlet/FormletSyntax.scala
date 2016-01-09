@@ -8,6 +8,8 @@ import scalaz.Functor
 class ObjectFormletOps[M[_], A](self: ObjectFormlet[M, A])(implicit M: Functor[M]) {
   def required[B](name: String)(implicit ev: A <:< Option[B]): ObjectFormlet[M, B] =
     Forms.requiredObj(name, self.map(a => a: Option[B]))
+
+  def fromRoot: ObjectFormlet[M, A] = Forms.fromRoot(self)
 }
 
 class FieldFormletOps[M[_], A](self: FieldFormlet[M, A])(implicit M: Functor[M]) {
@@ -17,6 +19,8 @@ class FieldFormletOps[M[_], A](self: FieldFormlet[M, A])(implicit M: Functor[M])
 
   def required[B](implicit ev: A <:< Option[B]): FieldFormlet[M, B] =
     Forms.required(self.map(a => a: Option[B]))
+
+  def fromRoot: FieldFormlet[M, A] = Forms.fromRoot(self)
 }
 
 class IdFieldFormletOps[A](self: IdFieldFormlet[A]) {
@@ -26,6 +30,8 @@ class IdFieldFormletOps[A](self: IdFieldFormlet[A]) {
 
   def required[B](implicit ev: A <:< Option[B]): IdFieldFormlet[B] =
     Forms.required(self.map(a => a: Option[B]))
+
+  def fromRoot: IdFieldFormlet[A] = Forms.fromRoot(self)
 }
 
 trait ToFieldFormletOps0 {

@@ -68,9 +68,7 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   )(
     implicit M: Functor[M]
   ): Formlet[M, I, E, B, V] = {
-    // XXX Import here to prevent conflicts with applicative syntax
-    import scalaz.syntax.bind._
-    mapResult((a, v) => ((a.disjunction >>= (f(_).disjunction)).validation, v))
+    mapResult((a, v) => ((a.disjunction.flatMap(f(_).disjunction)).validation, v))
   }
 
   def validate[B](
@@ -96,13 +94,14 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   )(
     implicit M: Monad[M]
   ): Formlet[M, I, E, B, V] = {
-    // XXX Import here to prevent conflicts with applicative syntax
-    import scalaz.syntax.bind._
     mapResultM((a, v) =>
-      EitherT(M.point(a.disjunction))
-        .flatMapF(f(_) ∘ (_.disjunction))
-        .run
-        .map(r => (r.validation, v))
+      M.map(
+        EitherT(M.point(a.disjunction))
+          .flatMapF(x => M.map(f(x))(_.disjunction))
+          .run
+      )(
+        r => (r.validation, v)
+      )
     )
   }
 
@@ -159,9 +158,19 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     implicit ev: this.type <~< Formlet[Id, I, E, A, V]
   ): Formlet[L, I, E, A, V] =
     Formlet[L, I, E, A, V](c => Applicative[L].point(ev(this).run(c)))
+
+  def local[X](f: X => I): Formlet[M, X, E, A, V] = Formlet(run compose f)
+
+  def contramap[X](f: X => I): Formlet[M, X, E, A, V] = local(f)
 }
 
 object Formlet {
+  implicit def formletContravariant[M[_], E, A, V]: Contravariant[Formlet[M, ?, E, A, V]] =
+    new Contravariant[Formlet[M, ?, E, A, V]] {
+      def contramap[X, XX](fa: Formlet[M, X, E, A, V])(f: XX => X): Formlet[M, XX, E, A, V] =
+        fa contramap f
+    }
+
   implicit def formletBifunctor[M[_] : Functor, I, V ]: Bifunctor[Formlet[M, I, ?, ?, V]] =
     new Bifunctor[Formlet[M, I, ?, ?, V]] {
       def bimap[A, B, C, D](fab: Formlet[M, I, A, B, V])(f: A => C, g: B => D): Formlet[M, I, C, D, V] =

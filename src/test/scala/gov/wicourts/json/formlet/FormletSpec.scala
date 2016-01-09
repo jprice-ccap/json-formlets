@@ -3,7 +3,7 @@ package gov.wicourts.json.formlet
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
-import scalaz.{Equal, Apply, Applicative, Bifunctor}
+import scalaz.{Equal, Apply, Applicative, Bifunctor, Contravariant}
 import scalaz.Id.Id
 import scalaz.scalacheck.ScalazArbitrary._
 import scalaz.scalacheck.ScalazProperties._
@@ -16,6 +16,10 @@ import org.scalacheck.{Gen, Arbitrary}
 class FormletSpec extends Specification with ScalaCheck {
   "Formlet" >> {
     "Type class laws" >> {
+      val intFunction: Arbitrary[Int => Int] = Arbitrary(
+        Gen.choose(1500, 2000).map(v => (i: Int) => i * v)
+      )
+
       "Applicative" >> {
         type SampleFormlet[A] = Formlet[Id, Int, String, A, String]
 
@@ -52,10 +56,6 @@ class FormletSpec extends Specification with ScalaCheck {
           )
         )
 
-        val intFunction: Arbitrary[Int => Int] = Arbitrary(
-          Gen.choose(1500, 2000).map(v => (i: Int) => i * v)
-        )
-
         val sampleEqual: Equal[SampleFormlet[Int, Int]] = Equal.equal((a1, a2) =>
           a1.run(99) === a2.run(99)
         )
@@ -65,6 +65,30 @@ class FormletSpec extends Specification with ScalaCheck {
           sampleEqual,
           intFormlet(i => i * 2),
           intFunction
+        )
+      }
+
+      "Contravariant" >> {
+        type SampleFormlet[A] = Formlet[Id, A, Int, Int, String]
+
+        val sampleFormlet: Arbitrary[SampleFormlet[Int]] = Arbitrary(
+          Gen.frequency(
+            1 -> Gen.alphaStr.map(s => Formlet(i => ((i*2).success[Int], s).point[Id])),
+            1 -> Apply[Gen].tuple2(Gen.choose(1, 1000), Gen.alphaStr).map { case (ii, ss) =>
+              Formlet((i: Int) => ((i * ii).failure[Int], ss).point[Id])
+            }
+          )
+        )
+
+        val sampleEqual: Equal[SampleFormlet[Int]] = Equal.equal((a1, a2) =>
+          a1.run(99) === a2.run(99)
+        )
+
+        contravariant.laws[SampleFormlet](
+          Contravariant[SampleFormlet],
+          sampleFormlet,
+          intFunction,
+          sampleEqual
         )
       }
     }
