@@ -116,6 +116,23 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
     }
   }
 
+  "Validation errors" >> {
+    "can be collapsed be field errors" >> {
+      val in = ValidationErrors.obj(List(
+        "something" -> ValidationErrors.field(NonEmptyList("a", "b")),
+        "other" -> ValidationErrors.array(List(
+          5 -> ValidationErrors.obj(List(
+            "else" -> ValidationErrors.field(NonEmptyList("a", "c"))
+          ))
+        ))
+      ))
+
+      val out = ValidationErrors.field(NonEmptyList("a", "b", "c"))
+
+      Equal[ValidationErrors].equal(ValidationErrors.collapse(in), out) must_== true
+    }
+  }
+
   "Type class laws" >> {
     implicit val arbitraryValidationErrors: Arbitrary[ValidationErrors] = Arbitrary {
       def genValidationErrors(arraySize: Int): Gen[ValidationErrors] =

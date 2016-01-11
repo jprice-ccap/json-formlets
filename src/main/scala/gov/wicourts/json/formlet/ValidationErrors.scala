@@ -61,6 +61,19 @@ object ValidationErrors {
     }
   }
 
+  def collapse(errors: ValidationErrors): ValidationErrors = {
+    def collapseAll[A](l: List[(A, ValidationErrors)]): ValidationErrors =
+      l.map(_._2).map(collapse).suml
+
+    dedup(
+      errors match {
+        case f@FieldErrors(_) => f
+        case ObjectErrors(l) => collapseAll(l)
+        case ArrayErrors(l) => collapseAll(l)
+      }
+    )
+  }
+
   def string(name: String, error: String): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(NonEmptyList(error)))))
 
