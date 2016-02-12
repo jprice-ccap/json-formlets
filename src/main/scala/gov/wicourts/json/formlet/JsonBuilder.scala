@@ -36,7 +36,8 @@ class JsonObjectBuilder private [formlet] (
 ) extends JsonBuilder {
   def toJson: Json = Json.obj(items: _*)
 
-  override def toString: String = "JsonObjectBuilder(" + items.mkString(", ") + ")"
+  override def toString: String =
+    items.mkString("JsonObjectBuilder(", ", ", ")")
 }
 
 object JsonObjectBuilder {

@@ -25,10 +25,10 @@ case class FieldView(name: String, value: Option[Json], label: Option[String], e
 
     val all = valueItem ++ metadata
 
-    all.headOption.as {
-      val j = new JsonObjectBuilder(all).toJson
-      new JsonObjectBuilder(List((name, j)))
-    }.orZero
+    new JsonObjectBuilder(
+      if (all.isEmpty) Nil
+      else List(name -> Json.obj(all: _*))
+    )
   }
 
   def toJson: Json = obj.toJson
