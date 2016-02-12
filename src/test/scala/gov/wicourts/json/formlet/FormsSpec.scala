@@ -12,7 +12,7 @@ import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
 
 import argonaut._
-import argonaut.Argonaut.jNull
+import argonaut.Argonaut._
 
 import gov.wicourts.json.formlet.Forms._
 import gov.wicourts.json.formlet.Forms.Id._
@@ -44,9 +44,17 @@ class FormsSpec extends Specification {
       result.toString must contain("Field nameL must be a(n) string")
     }
 
-    "should treat null as empty (good idea?)" >> {
+    "should treat null as empty" >> {
       val result = string("nameL", None).eval(
         parse("""{"nameL":null}""")
+      )
+
+      result must_== None.success
+    }
+
+    "should treat a zero-length string as empty" >> {
+      val result = string("nameL", None).eval(
+        parse("""{"nameL":"  "}""")
       )
 
       result must_== None.success

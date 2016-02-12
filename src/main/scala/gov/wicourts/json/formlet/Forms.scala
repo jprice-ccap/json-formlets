@@ -115,7 +115,7 @@ object Forms {
       "array of string",
       l => Json.array(l.map(jString(_)): _*),
       _.isArray,
-      fromArray(name, "string", _.string),
+      fromArray(name, "string", _.string.map(_.trim)),
       name,
       value
     )
@@ -149,15 +149,18 @@ object Forms {
   def stringM[M[_] : Applicative](
     name: String,
     value: Option[String]
-  ): FieldFormlet[M, Option[String]] =
-    primitive(
-      "string",
-      jString(_),
-      _.isString,
-      ((_: Json).string.map(_.trim)) andThen (a => check(name, "string", a)),
-      name,
-      value
-    )
+  ): FieldFormlet[M, Option[String]] = {
+    val result: FieldFormlet[M, Option[String]] =
+      primitive(
+        "string",
+        jString(_),
+        _.isString,
+        ((_: Json).string) andThen (a => check(name, "string", a)),
+        name,
+        value
+      )
+    result.map(_.map(_.trim).filterNot(_.isEmpty))
+  }
 
   def numberM[M[_] : Applicative](
     name: String,
