@@ -5,7 +5,7 @@ import argonaut.Json
 
 import scalaz.std.list._
 import scalaz.std.option._
-import scalaz.syntax.monad._
+import scalaz.syntax.monadPlus._
 import scalaz.syntax.std.option._
 
 import scalaz.{@>, Lens}
@@ -14,8 +14,8 @@ case class FieldView(name: String, value: Option[Json], label: Option[String], e
   def obj: JsonObjectBuilder = {
     val metadataItems =
       List(
-        label.map(l => ("label", jString(l)))
-      ).map(_.toList).join
+        label.map(l => "label" -> jString(l))
+      ).unite
 
     val metadata = metadataItems.headOption.as(
       ("metadata", Json.obj(metadataItems: _*))
