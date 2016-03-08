@@ -80,6 +80,9 @@ object ValidationErrors {
   def list(name: String, errors: NonEmptyList[String]): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(errors))))
 
+  def collapseTo(name: String, errors: ValidationErrors): ValidationErrors =
+    ObjectErrors(List((name, collapse(errors))))
+
   def relabel(errors: ValidationErrors, from: String, to: String): ValidationErrors =
     errors match {
       case ObjectErrors(errors) => ObjectErrors(
