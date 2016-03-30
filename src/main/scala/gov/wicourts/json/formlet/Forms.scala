@@ -79,7 +79,7 @@ object Forms {
             .map(
               _.traverseBreak(
                 Kleisli[State[X, ?], Cursor, Option[Cursor]](c =>
-                  State(l => (l :+ (c.some, template), c.right))
+                  State(l => (l :+ ((c.some, template)), c.right))
                 )
               ).apply(Vector()).toList
             )

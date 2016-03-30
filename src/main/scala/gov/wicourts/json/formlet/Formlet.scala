@@ -7,14 +7,14 @@ import scalaz.Id.Id
 import scalaz.NonEmptyList.nel
 
 import scalaz.std.function._
-import scalaz.std.list._
 import scalaz.std.option._
 import scalaz.syntax.applicative._
 import scalaz.syntax.monoid._
-import scalaz.syntax.traverse1._
 import scalaz.syntax.validation._
 
 import scala.language.higherKinds
+
+import Predef.identity
 
 case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
   def eval(i: I)(implicit M: Functor[M]): M[Validation[E, A]] =

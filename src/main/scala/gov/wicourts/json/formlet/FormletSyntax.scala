@@ -5,6 +5,8 @@ import scala.language.higherKinds
 
 import scalaz.Functor
 
+import Predef.<:<
+
 class ObjectFormletOps[M[_], A](self: ObjectFormlet[M, A])(implicit M: Functor[M]) {
   def required[B](name: String)(implicit ev: A <:< Option[B]): ObjectFormlet[M, B] =
     Forms.requiredObj(name, self.map(a => a: Option[B]))

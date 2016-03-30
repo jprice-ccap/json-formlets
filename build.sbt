@@ -20,7 +20,23 @@ libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-scalacheck-binding" % "7.1.5" % "test"
 )
 
-scalacOptions ++= Seq("-deprecation","-feature","-Xfatal-warnings")
+// https://tpolecat.github.io/2014/04/11/scalac-flags.html
+
+scalacOptions ++= Seq(
+  "-deprecation",
+  "-encoding", "UTF-8",       // yes, this is 2 args
+  "-feature",
+  "-unchecked",
+  "-Xfatal-warnings",
+  "-Xlint",
+  "-Yno-adapted-args",
+  "-Ywarn-dead-code",        // N.B. doesn't work well with the ??? hole
+  "-Ywarn-numeric-widen",
+  "-Ywarn-value-discard",
+  "-Xfuture",
+  "-Ywarn-unused-import",   // 2.11 only
+  "-Yno-predef"   // no automatic import of Predef (removes irritating implicits)
+)
 
 //scalacOptions in Test ++= Seq("-Yrangepos")
 

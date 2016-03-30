@@ -6,17 +6,16 @@ import org.specs2.mutable.Specification
 import scalaz.{Apply, NonEmptyList, Monoid}
 import scalaz.NonEmptyList.nel
 
-import argonaut._
 import argonaut.Argonaut.jNull
 
 import scalaz.Equal
-import scalaz.syntax.equal._
 import scalaz.syntax.monad._
 import scalaz.syntax.monoid._
 import scalaz.scalacheck.ScalazProperties._
-import scalaz.scalacheck.ScalazArbitrary._
 
 import org.scalacheck.{Gen, Arbitrary}
+
+import Predef.ArrowAssoc
 
 class ValidationErrorsSpec extends Specification with ScalaCheck {
   "Fields errors" >> {

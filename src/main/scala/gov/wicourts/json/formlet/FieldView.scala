@@ -6,9 +6,10 @@ import argonaut.Json
 import scalaz.std.list._
 import scalaz.std.option._
 import scalaz.syntax.monadPlus._
-import scalaz.syntax.std.option._
 
 import scalaz.{@>, Lens}
+
+import Predef.{identity, ArrowAssoc}
 
 case class FieldView(name: String, value: Option[Json], label: Option[String], errorName: String) {
   def obj: JsonObjectBuilder = {

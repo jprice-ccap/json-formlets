@@ -5,13 +5,14 @@ import org.specs2.mutable.Specification
 
 import scalaz.{Equal, Apply, Applicative, Bifunctor, Contravariant}
 import scalaz.Id.Id
-import scalaz.scalacheck.ScalazArbitrary._
 import scalaz.scalacheck.ScalazProperties._
 import scalaz.std.string._
 import scalaz.syntax.monad._
 import scalaz.syntax.validation._
 
 import org.scalacheck.{Gen, Arbitrary}
+
+import Predef.ArrowAssoc
 
 class FormletSpec extends Specification with ScalaCheck {
   "Formlet" >> {

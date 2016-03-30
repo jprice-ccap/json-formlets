@@ -5,18 +5,17 @@ import org.specs2.mutable.Specification
 import scalaz.{Bind, NonEmptyList}
 import scalaz.Id.Id
 
-import scalaz.std.list._
 import scalaz.std.option._
 import scalaz.syntax.applicative._
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
 
 import argonaut._
-import argonaut.Argonaut._
 
-import gov.wicourts.json.formlet.Forms._
 import gov.wicourts.json.formlet.Forms.Id._
 import gov.wicourts.json.formlet.syntax._
+
+import Predef.ArrowAssoc
 
 class FormsSpec extends Specification {
   private def parse(s: String): Option[Cursor] =

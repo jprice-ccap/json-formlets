@@ -4,10 +4,7 @@ import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
 import scalaz.Apply
-import scalaz.syntax.monoid._
-import scalaz.syntax.monad._
 import scalaz.scalacheck.ScalazProperties._
-import scalaz.scalacheck.ScalazArbitrary._
 
 import argonaut.Json.jNumber
 
