@@ -7,10 +7,12 @@ import scalaz._
 import scalaz.OptionT.optionT
 import scalaz.std.list._
 import scalaz.std.option._
+import scalaz.std.string._
 import scalaz.std.tuple._
 import scalaz.syntax.applicative._
 import scalaz.syntax.bind._
 import scalaz.syntax.either._
+import scalaz.syntax.equal._
 import scalaz.syntax.std.option._
 import scalaz.syntax.traverse._
 
@@ -32,7 +34,7 @@ object Forms {
         c
           .flatMap(_.downField(name))
           .map(_.focus)
-          .filterNot(_.isNull)
+          .filterNot(j => j.isNull || j.string.exists(_ === ""))
           .right[NonEmptyList[String]]
       ).flatMapF(j =>
         j.right[NonEmptyList[String]].ensure(
@@ -70,7 +72,7 @@ object Forms {
   ): JsonFormlet[M, ValidationErrors, List[A], JsonArrayBuilder] =
     Formlet { c =>
       val l: List[(Option[Cursor], ObjectFormlet[M, A])] =
-        if (c.isEmpty)
+        if (c.isEmpty || c.map(_.focus).exists(_.string.exists(_ === "")))
           defaultValue.map((c, _))
         else {
           type X = Vector[(Option[Cursor], ObjectFormlet[M, A])]

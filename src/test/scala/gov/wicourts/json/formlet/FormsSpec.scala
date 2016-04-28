@@ -2,7 +2,7 @@ package gov.wicourts.json.formlet
 
 import org.specs2.mutable.Specification
 
-import scalaz.{Bind, NonEmptyList}
+import scalaz.{Bind, NonEmptyList, Success}
 import scalaz.Id.Id
 
 import scalaz.std.option._
@@ -85,18 +85,6 @@ class FormsSpec extends Specification {
       a must_== NonEmptyList("This field is required").failure
     }
 
-    "can be validated" >> {
-      val f = number("count", None)
-        .required
-        .validate(
-          _.success.ensure(NonEmptyList("count must be bigger than 7"))(_.truncateToInt > 7),
-          _.success.ensure(NonEmptyList("count must be less than 5"))(_.truncateToInt < 5)
-        )
-      val result = f.eval(parse("""{"count":6}"""))
-
-      result must_== NonEmptyList("count must be bigger than 7", "count must be less than 5").failure
-    }
-
     "can be lifted" >> {
       val r = string("nameL", "Smith".some).lift[Option].eval(None)
 
@@ -115,6 +103,38 @@ class FormsSpec extends Specification {
         .errorName("nameLOther")
       val results = r.obj.eval(None)
       results.leftMap(_.toJson.nospaces) must_== """{"nameLOther":["Nope"]}""".failure
+    }
+  }
+
+  "A number form" >> {
+    "can be validated" >> {
+      val f = number("count", None)
+        .required
+        .validate(
+          _.success.ensure(NonEmptyList("count must be bigger than 7"))(_.truncateToInt > 7),
+          _.success.ensure(NonEmptyList("count must be less than 5"))(_.truncateToInt < 5)
+        )
+      val result = f.eval(parse("""{"count":6}"""))
+
+      result must_== NonEmptyList("count must be bigger than 7", "count must be less than 5").failure
+    }
+
+    "treats an empty string as empty" >> {
+      val f = number("count", None)
+
+      val result = f.eval(parse("""{"count":""}"""))
+
+      result must_== None.success
+    }
+  }
+
+  "A boolean form" >> {
+    "treats an empty string as empty" >> {
+      val f = boolean("isActive", None)
+
+      val result = f.eval(parse("""{"isActive":""}"""))
+
+      result must_== None.success
     }
   }
 
@@ -146,6 +166,14 @@ class FormsSpec extends Specification {
       )
 
       result must_== NonEmptyList("Expected a string when processing field colors").failure
+    }
+
+    "should treat an empty string as an empty" >> {
+      val result = listOfString("colors", None).eval(
+        parse("""{"colors":""}""")
+      )
+
+      result must_== None.success
     }
   }
 
@@ -312,6 +340,15 @@ class FormsSpec extends Specification {
 
       val expected = """{"fullName":[null,{"nameL":["Field nameL must be a(n) string"]}]}"""
       result.leftMap(_.toJson.nospaces) must_== expected.failure
+    }
+
+    "should treat an empty string as an empty list" >> {
+      val json = """{"fullName":""}"""
+      val form = nested("fullName", list(fullNameForm(FullName(None, None)), Nil))
+
+      val result = form.eval(parse(json))
+
+      result must_== Success(List())
     }
   }
 
