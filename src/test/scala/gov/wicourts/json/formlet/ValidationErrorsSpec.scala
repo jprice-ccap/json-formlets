@@ -20,32 +20,32 @@ import Predef.ArrowAssoc
 class ValidationErrorsSpec extends Specification with ScalaCheck {
   "Fields errors" >> {
     "can render themselves to JSON" >> {
-      val errors = ValidationErrors.field(NonEmptyList("a", "b"))
+      val errors = ValidationErrors.fieldErrors(NonEmptyList("a", "b"))
 
       errors.toJson.nospaces must_== """["a","b"]"""
     }
 
     "can be added" >> {
-      val e1 = ValidationErrors.field(NonEmptyList("a"))
-      val e2 = ValidationErrors.field(NonEmptyList("b"))
+      val e1 = ValidationErrors.fieldErrors(NonEmptyList("a"))
+      val e2 = ValidationErrors.fieldErrors(NonEmptyList("b"))
 
       (e1 |+| e2).toJson.nospaces must_== """["a","b"]"""
     }
 
     "can be deduped" >> {
-      val in = ValidationErrors.field(NonEmptyList("a", "b", "c", "b"))
-      val out = ValidationErrors.field(NonEmptyList("c", "b", "a"))
+      val in = ValidationErrors.fieldErrors(NonEmptyList("a", "b", "c", "b"))
+      val out = ValidationErrors.fieldErrors(NonEmptyList("c", "b", "a"))
 
       Equal[ValidationErrors].equal(ValidationErrors.dedup(in), out) must_== true
     }
   }
 
   "Object errors" >> {
-    val errors = ValidationErrors.obj(List(
-      "field1" ->  ValidationErrors.field(NonEmptyList("a")),
-      "field2" ->  ValidationErrors.field(NonEmptyList("b")),
-      "obj1" -> ValidationErrors.obj(List(
-        "field3" -> ValidationErrors.field(NonEmptyList("c"))
+    val errors = ValidationErrors.objectErrors(List(
+      "field1" ->  ValidationErrors.fieldErrors(NonEmptyList("a")),
+      "field2" ->  ValidationErrors.fieldErrors(NonEmptyList("b")),
+      "obj1" -> ValidationErrors.objectErrors(List(
+        "field3" -> ValidationErrors.fieldErrors(NonEmptyList("c"))
       ))
     ))
 
@@ -54,11 +54,11 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
     }
 
     "can be added" >> {
-      val other = ValidationErrors.obj(List(
-        "field1" ->  ValidationErrors.field(NonEmptyList("d")),
-        "field4" ->  ValidationErrors.field(NonEmptyList("b")),
-        "obj1" -> ValidationErrors.obj(List(
-          "field3" -> ValidationErrors.field(NonEmptyList("x"))
+      val other = ValidationErrors.objectErrors(List(
+        "field1" ->  ValidationErrors.fieldErrors(NonEmptyList("d")),
+        "field4" ->  ValidationErrors.fieldErrors(NonEmptyList("b")),
+        "obj1" -> ValidationErrors.objectErrors(List(
+          "field3" -> ValidationErrors.fieldErrors(NonEmptyList("x"))
         ))
       ))
 
@@ -66,15 +66,15 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
     }
 
     "can be deduped" >> {
-      val in = ValidationErrors.obj(List(
-        "field1" -> ValidationErrors.field(NonEmptyList("a", "c")),
-        "field1" -> ValidationErrors.field(NonEmptyList("a")),
-        "field2" -> ValidationErrors.field(NonEmptyList("b"))
+      val in = ValidationErrors.objectErrors(List(
+        "field1" -> ValidationErrors.fieldErrors(NonEmptyList("a", "c")),
+        "field1" -> ValidationErrors.fieldErrors(NonEmptyList("a")),
+        "field2" -> ValidationErrors.fieldErrors(NonEmptyList("b"))
       ))
 
-      val out = ValidationErrors.obj(List(
-        "field1" -> ValidationErrors.field(NonEmptyList("a", "c")),
-        "field2" -> ValidationErrors.field(NonEmptyList("b"))
+      val out = ValidationErrors.objectErrors(List(
+        "field1" -> ValidationErrors.fieldErrors(NonEmptyList("a", "c")),
+        "field2" -> ValidationErrors.fieldErrors(NonEmptyList("b"))
       ))
 
       Equal[ValidationErrors].equal(ValidationErrors.dedup(in), out) must_== true
@@ -82,9 +82,9 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
   }
 
   "Array errors" >> {
-    val errors = ValidationErrors.array(List(
-      1 -> ValidationErrors.field(NonEmptyList("a")),
-      4 -> ValidationErrors.field(NonEmptyList("b"))
+    val errors = ValidationErrors.arrayErrors(List(
+      1 -> ValidationErrors.fieldErrors(NonEmptyList("a")),
+      4 -> ValidationErrors.fieldErrors(NonEmptyList("b"))
     ))
 
     "can render themselves to JSON" >> {
@@ -92,23 +92,23 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
     }
 
     "can be added" >> {
-      val other = ValidationErrors.array(List(
-        1 -> ValidationErrors.field(NonEmptyList("a")),
-        6 -> ValidationErrors.field(NonEmptyList("c"))
+      val other = ValidationErrors.arrayErrors(List(
+        1 -> ValidationErrors.fieldErrors(NonEmptyList("a")),
+        6 -> ValidationErrors.fieldErrors(NonEmptyList("c"))
       ))
       (errors |+| other).toJson.nospaces must_== """[null,["a","a"],null,null,["b"],null,["c"]]"""
     }
 
     "can be deduped" >> {
-      val in = ValidationErrors.array(List(
-        1 -> ValidationErrors.field(NonEmptyList("a", "c")),
-        1 -> ValidationErrors.field(NonEmptyList("a")),
-        2 -> ValidationErrors.field(NonEmptyList("b"))
+      val in = ValidationErrors.arrayErrors(List(
+        1 -> ValidationErrors.fieldErrors(NonEmptyList("a", "c")),
+        1 -> ValidationErrors.fieldErrors(NonEmptyList("a")),
+        2 -> ValidationErrors.fieldErrors(NonEmptyList("b"))
       ))
 
-      val out = ValidationErrors.array(List(
-        1 -> ValidationErrors.field(NonEmptyList("a", "c")),
-        2 -> ValidationErrors.field(NonEmptyList("b"))
+      val out = ValidationErrors.arrayErrors(List(
+        1 -> ValidationErrors.fieldErrors(NonEmptyList("a", "c")),
+        2 -> ValidationErrors.fieldErrors(NonEmptyList("b"))
       ))
 
       Equal[ValidationErrors].equal(ValidationErrors.dedup(in), out) must_== true
@@ -116,23 +116,23 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
   }
 
   "Validation errors" >> {
-    val in = ValidationErrors.obj(List(
-      "something" -> ValidationErrors.field(NonEmptyList("a", "b")),
-      "other" -> ValidationErrors.array(List(
-        5 -> ValidationErrors.obj(List(
-          "else" -> ValidationErrors.field(NonEmptyList("a", "c"))
+    val in = ValidationErrors.objectErrors(List(
+      "something" -> ValidationErrors.fieldErrors(NonEmptyList("a", "b")),
+      "other" -> ValidationErrors.arrayErrors(List(
+        5 -> ValidationErrors.objectErrors(List(
+          "else" -> ValidationErrors.fieldErrors(NonEmptyList("a", "c"))
         ))
       ))
     ))
 
     "can be collapsed to field errors" >> {
-      val out = ValidationErrors.field(NonEmptyList("a", "b", "c"))
+      val out = ValidationErrors.fieldErrors(NonEmptyList("a", "b", "c"))
 
       Equal[ValidationErrors].equal(ValidationErrors.collapse(in), out) must_== true
     }
 
     "can be collapsed to a particular name" >> {
-      val out = ValidationErrors.obj(List("_error" -> ValidationErrors.field(NonEmptyList("a", "b", "c"))))
+      val out = ValidationErrors.objectErrors(List("_error" -> ValidationErrors.fieldErrors(NonEmptyList("a", "b", "c"))))
 
       Equal[ValidationErrors].equal(ValidationErrors.collapseTo("_error", in), out) must_== true
     }

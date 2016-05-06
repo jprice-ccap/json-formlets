@@ -60,7 +60,7 @@ object Forms {
     inner: JsonFormlet[M, ValidationErrors, A, V]
   ): ObjectFormlet[M, A] =
     namedContext(name, inner).mapResult((r, v) => (
-      r.leftMap(x => ValidationErrors.obj(List((name, x)))),
+      r.leftMap(x => ValidationErrors.objectErrors(List((name, x)))),
       JsonObjectBuilder.row(name, v.toJson)
     ))
 
@@ -93,7 +93,7 @@ object Forms {
         .compose[Validation[ValidationErrors, ?]]
       M.map(X.traverse(l.zipWithIndex) { case ((i, x), idx) =>
         M.map(x.mapResult((r, v) => (
-          r.leftMap(o => ValidationErrors.array(List((idx, o)))),
+          r.leftMap(o => ValidationErrors.arrayErrors(List((idx, o)))),
           JsonArrayBuilder.item(v.toJson)
         )).run(i))(_.swap)
       })(_.swap)

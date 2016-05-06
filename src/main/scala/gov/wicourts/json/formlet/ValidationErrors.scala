@@ -39,13 +39,13 @@ private case class ArrayErrors(errors: List[(Int, ValidationErrors)]) extends Va
 }
 
 object ValidationErrors {
-  private [formlet] def field(errors: NonEmptyList[String]): ValidationErrors =
+  private [formlet] def fieldErrors(errors: NonEmptyList[String]): ValidationErrors =
     FieldErrors(errors)
 
-  private [formlet] def obj(errors: List[(String, ValidationErrors)]): ValidationErrors =
+  private [formlet] def objectErrors(errors: List[(String, ValidationErrors)]): ValidationErrors =
     ObjectErrors(errors)
 
-  private [formlet] def array(errors: List[(Int, ValidationErrors)]): ValidationErrors =
+  private [formlet] def arrayErrors(errors: List[(Int, ValidationErrors)]): ValidationErrors =
     ArrayErrors(errors)
 
   def dedup(errors: ValidationErrors): ValidationErrors = {
@@ -79,6 +79,9 @@ object ValidationErrors {
 
   def list(name: String, errors: NonEmptyList[String]): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(errors))))
+
+  def array(name: String, errors: List[(Int, ValidationErrors)]): ValidationErrors =
+    ObjectErrors(List((name, ArrayErrors(errors))))
 
   def collapseTo(name: String, errors: ValidationErrors): ValidationErrors =
     ObjectErrors(List((name, collapse(errors))))
