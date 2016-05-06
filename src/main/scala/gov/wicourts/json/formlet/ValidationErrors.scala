@@ -80,8 +80,8 @@ object ValidationErrors {
   def list(name: String, errors: NonEmptyList[String]): ValidationErrors =
     ObjectErrors(List((name, FieldErrors(errors))))
 
-  def array(name: String, errors: List[(Int, ValidationErrors)]): ValidationErrors =
-    ObjectErrors(List((name, ArrayErrors(errors))))
+  def array(name: String, errors: NonEmptyList[(Int, ValidationErrors)]): ValidationErrors =
+    ObjectErrors(List((name, ArrayErrors(errors.list))))
 
   def collapseTo(name: String, errors: ValidationErrors): ValidationErrors =
     ObjectErrors(List((name, collapse(errors))))
