@@ -9,7 +9,7 @@ import scalaz.syntax.monadPlus._
 
 import scalaz.{@>, Lens}
 
-import Predef.{identity, ArrowAssoc}
+import Predef.ArrowAssoc
 
 case class FieldView(name: String, value: Option[Json], label: Option[String], errorName: String) {
   def obj: JsonObjectBuilder = {

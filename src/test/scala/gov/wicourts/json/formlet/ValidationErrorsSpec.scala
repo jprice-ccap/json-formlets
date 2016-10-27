@@ -3,12 +3,10 @@ package gov.wicourts.json.formlet
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
-import scalaz.{Apply, NonEmptyList, Monoid}
+import scalaz.{Apply, NonEmptyList}
 import scalaz.NonEmptyList.nel
 
-import argonaut.Argonaut.jNull
-
-import scalaz.Equal
+import scalaz.{Equal, IList}
 import scalaz.syntax.monad._
 import scalaz.syntax.monoid._
 import scalaz.scalacheck.ScalazProperties._
@@ -142,7 +140,7 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
     implicit val arbitraryValidationErrors: Arbitrary[ValidationErrors] = Arbitrary {
       def genValidationErrors(arraySize: Int): Gen[ValidationErrors] =
         Gen.frequency[ValidationErrors](
-          1 -> ^(Gen.alphaStr, Gen.listOf(Gen.alphaStr))((h, t) => FieldErrors(nel(h, t))),
+          1 -> ^(Gen.alphaStr, Gen.listOf(Gen.alphaStr))((h, t) => FieldErrors(nel(h, IList.fromList(t)))),
           1 -> Gen.listOfN(arraySize, Apply[Gen].tuple2(Gen.alphaStr, genValidationErrors(arraySize/2))).map(l =>
             ObjectErrors(l)
           ),

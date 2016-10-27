@@ -1,6 +1,7 @@
 package gov.wicourts.json.formlet
 
 import argonaut.Json
+import argonaut.ArgonautScalaz._
 
 import scalaz.{Equal, Monoid}
 import scalaz.std.list._

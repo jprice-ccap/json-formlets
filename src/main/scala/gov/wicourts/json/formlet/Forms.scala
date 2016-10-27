@@ -64,6 +64,22 @@ object Forms {
       JsonObjectBuilder.row(name, v.toJson)
     ))
 
+  // This was removed from Argonaut in v6.2 as part of moving the Scalaz
+  // integration to a separate library.
+  private def traverseBreak[X](c: Cursor, r: Kleisli[State[X, ?], Cursor, Option[Cursor]]): Endo[X] =
+    Endo(x => {
+      @annotation.tailrec
+      def spin(z: X, d: Cursor): X = {
+        val (q, k) = r run d run z
+        k match {
+          case None => q
+          case Some(a) => spin(q, a)
+        }
+      }
+
+      spin(x, c)
+    })
+
   def listM[M[_], A](
     template: ObjectFormlet[M, A],
     defaultValue: List[ObjectFormlet[M, A]]
@@ -78,8 +94,9 @@ object Forms {
           type X = Vector[(Option[Cursor], ObjectFormlet[M, A])]
           c
             .flatMap(_.downArray)
-            .map(
-              _.traverseBreak(
+            .map(c =>
+              traverseBreak(
+                c,
                 Kleisli[State[X, ?], Cursor, Option[Cursor]](c =>
                   State(l => (l :+ ((c.some, template)), c.right))
                 )

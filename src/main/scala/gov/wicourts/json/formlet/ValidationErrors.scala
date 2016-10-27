@@ -1,9 +1,9 @@
 package gov.wicourts.json.formlet
 
-import scalaz.{\/, NonEmptyList, Monoid}
+import scalaz.{NonEmptyList, Monoid}
 
 import argonaut.Json
-import argonaut.Json.{jNumber, jString}
+import argonaut.Json.jString
 
 import scalaz.Equal
 import scalaz.State._
@@ -81,7 +81,7 @@ object ValidationErrors {
     ObjectErrors(List((name, FieldErrors(errors))))
 
   def array(name: String, errors: NonEmptyList[(Int, ValidationErrors)]): ValidationErrors =
-    ObjectErrors(List((name, ArrayErrors(errors.list))))
+    ObjectErrors(List((name, ArrayErrors(errors.toList))))
 
   def collapseTo(name: String, errors: ValidationErrors): ValidationErrors =
     ObjectErrors(List((name, collapse(errors))))

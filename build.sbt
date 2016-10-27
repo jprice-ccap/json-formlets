@@ -2,22 +2,23 @@ name := "json-formlets"
 
 organization := "gov.wicourts"
 
-version := "0.2.6-SNAPSHOT"
+version := "0.3.0-SNAPSHOT"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.11.8"
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++= Seq(
-  "org.scalaz" %% "scalaz-core" % "7.1.5" % "compile",
-  "io.argonaut" %% "argonaut" % "6.1"
+  "org.scalaz" %% "scalaz-core" % "7.2.6" % "compile",
+  "io.argonaut" %% "argonaut" % "6.2-M3",
+  "io.argonaut" %% "argonaut-scalaz" % "6.2-M3"
 )
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "3.6.5" % "test",
-  "org.specs2" %% "specs2-matcher-extra" % "3.6.5" % "test",
-  "org.specs2" %% "specs2-scalacheck" % "3.6.5" % "test",
-  "org.scalaz" %% "scalaz-scalacheck-binding" % "7.1.5" % "test"
+  "org.specs2" %% "specs2-core" % "3.8.5.1" % "test",
+  "org.specs2" %% "specs2-matcher-extra" % "3.8.5.1" % "test",
+  "org.specs2" %% "specs2-scalacheck" % "3.8.5.1" % "test",
+  "org.scalaz" %% "scalaz-scalacheck-binding" % "7.2.6" % "test"
 )
 
 // https://tpolecat.github.io/2014/04/11/scalac-flags.html

@@ -1,12 +1,13 @@
 package gov.wicourts.json.formlet
 
 import org.specs2.ScalaCheck
+import org.specs2.control.StackTraceFilter
 import org.specs2.mutable.Specification
 
-import scalaz.{Equal, Apply, Applicative, Bifunctor, Contravariant}
+import scalaz.{Equal, Apply, /* Applicative, */ Bifunctor, Contravariant}
 import scalaz.Id.Id
 import scalaz.scalacheck.ScalazProperties._
-import scalaz.std.string._
+// import scalaz.std.string._
 import scalaz.syntax.monad._
 import scalaz.syntax.validation._
 
@@ -15,12 +16,25 @@ import org.scalacheck.{Gen, Arbitrary}
 import Predef.ArrowAssoc
 
 class FormletSpec extends Specification with ScalaCheck {
+  object ShowAll extends StackTraceFilter {
+    override def apply(e: Seq[StackTraceElement]) = e
+  }
+
+  // XXX Display entire stack trace. Can be removed once the issue below is
+  // resolved.
+  args.report(traceFilter = ShowAll)
+
   "Formlet" >> {
     "Type class laws" >> {
       val intFunction: Arbitrary[Int => Int] = Arbitrary(
         Gen.choose(1500, 2000).map(v => (i: Int) => i * v)
       )
 
+      // XXX Comment out for now. There is a binary incomptability between
+      // scalacheck 1.12 and scalacheck 1.13 that causes this to crash at
+      // runtime (specs2 uses 1.13, but the scalaz integration uses 1.12).  It
+      // looks this is being worked on for 7.2.7 though.
+      /*
       "Applicative" >> {
         type SampleFormlet[A] = Formlet[Id, Int, String, A, String]
 
@@ -44,6 +58,7 @@ class FormletSpec extends Specification with ScalaCheck {
           sampleEqual
         )
       }
+      */
 
       "Bifunctor" >> {
         type SampleFormlet[A, B] = Formlet[Id, Int, A, B, String]

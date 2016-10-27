@@ -1,5 +1,4 @@
 -Xss4m
--XX:PermSize=128m
 -XX:+UseConcMarkSweepGC
 -XX:+CMSClassUnloadingEnabled
 -Djline.inputrc=$HOME/.inputrc.jline

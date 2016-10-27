@@ -78,7 +78,7 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     implicit E: Semigroup[E], M: Applicative[M]
   ): Formlet[M, I, E, B, V] = {
     val X = Applicative[A => ?].compose[Validation[E, ?]]
-    val f = X.sequence(nel(h, t.toList))
+    val f = X.sequence(nel(h, IList(t: _*)))
     mapValidation(f).map(_.head)
   }
 
@@ -112,7 +112,7 @@ case class Formlet[M[_], I, E, A, V](run: I => M[(Validation[E, A], V)]) {
     implicit E: Semigroup[E], M: Monad[M]
   ): Formlet[M, I, E, B, V] = {
     val X = Applicative[A => ?].compose[M].compose[Validation[E, ?]]
-    val f = X.sequence(nel(h, t.toList))
+    val f = X.sequence(nel(h, IList(t: _*)))
     mapValidationM(f).map(_.head)
   }
 
