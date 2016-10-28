@@ -15,9 +15,9 @@ libraryDependencies ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2-core" % "3.8.5.1" % "test",
-  "org.specs2" %% "specs2-matcher-extra" % "3.8.5.1" % "test",
-  "org.specs2" %% "specs2-scalacheck" % "3.8.5.1" % "test",
+  "org.specs2" %% "specs2-core" % "3.8.4-scalacheck-1.12.5" % "test",
+  "org.specs2" %% "specs2-matcher-extra" % "3.8.4-scalacheck-1.12.5" % "test",
+  "org.specs2" %% "specs2-scalacheck" % "3.8.4-scalacheck-1.12.5" % "test",
   "org.scalaz" %% "scalaz-scalacheck-binding" % "7.2.6" % "test"
 )
 
