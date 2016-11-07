@@ -19,17 +19,27 @@ import scalaz.syntax.traverse._
 
 sealed trait ValidationErrors {
   def toJson: Json
+
+  def fold[A](
+    fieldErrors: NonEmptyList[String] => A,
+    arrayErrors: List[(Int, ValidationErrors)] => A,
+    objectErrors: List[(String, ValidationErrors)] => A
+  ): A = this match {
+    case FieldErrors(errors) => fieldErrors(errors)
+    case ArrayErrors(errors) => arrayErrors(errors)
+    case ObjectErrors(errors) => objectErrors(errors)
+  }
 }
 
-private case class FieldErrors(errors: NonEmptyList[String]) extends ValidationErrors {
+case class FieldErrors private (errors: NonEmptyList[String]) extends ValidationErrors {
   def toJson: Json = Json.array(errors.map(jString(_)).toList: _*)
 }
 
-private case class ObjectErrors(errors: List[(String, ValidationErrors)]) extends ValidationErrors {
+case class ObjectErrors private (errors: List[(String, ValidationErrors)]) extends ValidationErrors {
   def toJson: Json = Json.obj(errors.map { case (n, e) => (n, e.toJson) }: _*)
 }
 
-private case class ArrayErrors(errors: List[(Int, ValidationErrors)]) extends ValidationErrors {
+case class ArrayErrors private (errors: List[(Int, ValidationErrors)]) extends ValidationErrors {
   def toJson: Json = {
     val jsonErrors = errors
       .sortBy(_._1)

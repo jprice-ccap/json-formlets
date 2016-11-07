@@ -7,6 +7,7 @@ import scalaz.{Apply, NonEmptyList}
 import scalaz.NonEmptyList.nel
 
 import scalaz.{Equal, IList}
+import scalaz.syntax.foldable._
 import scalaz.syntax.monad._
 import scalaz.syntax.monoid._
 import scalaz.scalacheck.ScalazProperties._
@@ -133,6 +134,23 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
       val out = ValidationErrors.objectErrors(List("_error" -> ValidationErrors.fieldErrors(NonEmptyList("a", "b", "c"))))
 
       Equal[ValidationErrors].equal(ValidationErrors.collapseTo("_error", in), out) must_== true
+    }
+
+    "can be folded to a value" >> {
+      val fieldError = ValidationErrors.fieldErrors(NonEmptyList("a", "b"))
+      val arrayError = ValidationErrors.arrayErrors(List(5 -> fieldError))
+      val objectError = ValidationErrors.objectErrors(List("other" -> fieldError))
+
+      def foldToString(errors: ValidationErrors): String =
+        errors.fold(
+          _.toList.mkString(", "),
+          _.map { case (i, v) => s"$i: ${foldToString(v)}" }.mkString("[", ", ", "]"),
+          _.map { case (k, v) => s"$k: ${foldToString(v)}" }.mkString("{", ", ", "}")
+        )
+
+      foldToString(fieldError) must_== "a, b"
+      foldToString(arrayError) must_== "[5: a, b]"
+      foldToString(objectError) must_== "{other: a, b}"
     }
   }
 
