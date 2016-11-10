@@ -152,6 +152,61 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
       foldToString(arrayError) must_== "[5: a, b]"
       foldToString(objectError) must_== "{other: a, b}"
     }
+
+    "can be formatted to a String" >> {
+      import Predef.augmentString
+
+      val fieldError = ValidationErrors.fieldErrors(NonEmptyList("a", "b"))
+      fieldError.pretty must_== "a; b"
+
+      val objectError1 = ValidationErrors.objectErrors(List("first" -> fieldError, "second" -> fieldError))
+      objectError1.pretty must_== """- First: a; b
+                                    |- Second: a; b""".stripMargin
+
+      val objectError2 = ValidationErrors.objectErrors(List(
+        "third" -> fieldError,
+        "fourth" -> objectError1,
+        "fifth" -> objectError1,
+        "sixth" -> fieldError
+      ))
+
+      objectError2.pretty must_== """- Third: a; b
+                                    |- Fourth:
+                                    |  - First: a; b
+                                    |  - Second: a; b
+                                    |- Fifth:
+                                    |  - First: a; b
+                                    |  - Second: a; b
+                                    |- Sixth: a; b""".stripMargin
+
+      val arrayError1 = ValidationErrors.arrayErrors(List(5 -> fieldError, 6 -> fieldError))
+
+      arrayError1.pretty must_== """- 5: a; b
+                                   |- 6: a; b""".stripMargin
+
+      val arrayError2 = ValidationErrors.arrayErrors(List(5 -> objectError1))
+
+      arrayError2.pretty must_== """- 5:
+                                   |  - First: a; b
+                                   |  - Second: a; b""".stripMargin
+
+      val objectError3 = ValidationErrors.objectErrors(List(
+        "seventhName" -> fieldError,
+        "eighthName" -> arrayError2,
+        "ninthName" -> fieldError,
+        "tenthName" -> objectError1
+      ))
+
+      objectError3.pretty must_== """- Seventh name: a; b
+                                    |- Eighth name:
+                                    |  - 5:
+                                    |    - First: a; b
+                                    |    - Second: a; b
+                                    |- Ninth name: a; b
+                                    |- Tenth name:
+                                    |  - First: a; b
+                                    |  - Second: a; b""".stripMargin
+    }
   }
 
   "Type class laws" >> {

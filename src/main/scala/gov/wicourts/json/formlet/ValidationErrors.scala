@@ -5,6 +5,8 @@ import scalaz.{NonEmptyList, Monoid}
 import argonaut.Json
 import argonaut.Json.jString
 
+import scala.util.matching._
+
 import scalaz.Equal
 import scalaz.State._
 
@@ -29,6 +31,27 @@ sealed trait ValidationErrors {
     case ArrayErrors(errors) => arrayErrors(errors)
     case ObjectErrors(errors) => objectErrors(errors)
   }
+
+  def pretty: String = {
+    def pretty0(e: ValidationErrors, indent: String, pendingWs: Boolean): String = {
+      import scalaz.syntax.foldable._
+      import ValidationErrors.unCamelCase
+
+      e.fold(
+        l => (if (pendingWs) " " else "") + l.toList.mkString("; "),
+        a => (if (pendingWs) "\n" else "") +
+          a.map { case (index, errors) =>
+            indent + "- " + index + ":" + pretty0(errors, indent + "  ", true)
+          }.mkString("\n"),
+        o => (if (pendingWs) "\n" else "") +
+          o.map { case (name, errors) =>
+            indent + "- " + unCamelCase(name) + ":" + pretty0(errors, indent + "  ", true)
+          }.mkString("\n")
+      )
+    }
+
+    pretty0(this, "", false)
+  }
 }
 
 case class FieldErrors private (errors: NonEmptyList[String]) extends ValidationErrors {
@@ -49,6 +72,14 @@ case class ArrayErrors private (errors: List[(Int, ValidationErrors)]) extends V
 }
 
 object ValidationErrors {
+  val camelRegex = new Regex("""([\p{Lower}])(\p{Upper})""")
+  private def unCamelCase(s: String): String =
+    if (! s.isEmpty) {
+      val s2 = Character.toUpperCase(s.charAt(0)) + s.substring(1)
+      camelRegex.replaceAllIn(s2, m => m.group(1) + " " + m.group(2).toLowerCase)
+    } else
+      ""
+
   private [formlet] def fieldErrors(errors: NonEmptyList[String]): ValidationErrors =
     FieldErrors(errors)
 
