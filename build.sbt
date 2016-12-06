@@ -5,15 +5,14 @@ organization := "gov.wicourts"
 version := "0.3.3-SNAPSHOT"
 
 scalaVersion := "2.11.8"
-// XXX Need 2.12 build of Argonaut
-// crossScalaVersions := Seq("2.11.8", "2.12.0")
+crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
 libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "7.2.7" % "compile",
-  "io.argonaut" %% "argonaut" % "6.2-M3",
-  "io.argonaut" %% "argonaut-scalaz" % "6.2-M3"
+  "io.argonaut" %% "argonaut" % "6.2-RC2",
+  "io.argonaut" %% "argonaut-scalaz" % "6.2-RC2"
 )
 
 libraryDependencies ++= Seq(
