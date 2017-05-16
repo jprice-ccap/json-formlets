@@ -2,10 +2,10 @@ name := "json-formlets"
 
 organization := "gov.wicourts"
 
-version := "0.3.4-SNAPSHOT"
+version := "0.4.0"
 
-scalaVersion := "2.11.8"
-crossScalaVersions := Seq("2.11.8", "2.12.1")
+scalaVersion := "2.12.2"
+crossScalaVersions := Seq("2.11.8", "2.12.2")
 
 resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 
@@ -23,6 +23,7 @@ libraryDependencies ++= Seq(
 )
 
 // https://tpolecat.github.io/2014/04/11/scalac-flags.html
+// https://tpolecat.github.io/2017/04/25/scalac-flags.html
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -30,13 +31,40 @@ scalacOptions ++= Seq(
   "-feature",
   "-unchecked",
   "-Xfatal-warnings",
-  "-Xlint",
-  "-Yno-adapted-args",
-  "-Ywarn-dead-code",        // N.B. doesn't work well with the ??? hole
-  "-Ywarn-numeric-widen",
-  "-Ywarn-value-discard",
   "-Xfuture",
-  "-Ywarn-unused-import",   // 2.11 only
+  "-Xlint:adapted-args",
+  "-Xlint:by-name-right-associative",
+  "-Xlint:constant",
+  "-Xlint:delayedinit-select",
+  "-Xlint:doc-detached",
+  "-Xlint:inaccessible",
+  "-Xlint:infer-any",
+  "-Xlint:missing-interpolator",
+  "-Xlint:nullary-override",
+  "-Xlint:nullary-unit",
+  "-Xlint:option-implicit",
+  "-Xlint:package-object-classes",
+  "-Xlint:poly-implicit-overload",
+  "-Xlint:private-shadow",
+  "-Xlint:stars-align",
+  "-Xlint:type-parameter-shadow",
+  "-Xlint:unsound-match",
+  // "-Xlint:unused", same as all the -Ywarn-unused:*
+  "-Yno-adapted-args",
+  "-Ywarn-dead-code",
+  "-Ywarn-extra-implicit",
+  "-Ywarn-inaccessible",
+  "-Ywarn-infer-any",
+  "-Ywarn-nullary-override",
+  "-Ywarn-nullary-unit",
+  "-Ywarn-numeric-widen",
+  "-Ywarn-unused:implicits",
+  "-Ywarn-unused:imports",
+//  "-Ywarn-unused:locals", gives an incorrect warning in Forms.scala
+  "-Ywarn-unused:params",
+  "-Ywarn-unused:patvars",
+  "-Ywarn-unused:privates",
+  "-Ywarn-value-discard",
   "-Yno-predef"   // no automatic import of Predef (removes irritating implicits)
 )
 
