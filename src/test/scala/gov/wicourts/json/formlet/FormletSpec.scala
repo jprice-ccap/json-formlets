@@ -51,7 +51,7 @@ class FormletSpec extends Specification with ScalaCheck {
         def intFormlet[A, B](f: Int => Int): Arbitrary[SampleFormlet[Int, Int]] = Arbitrary(
           Gen.frequency(
             1 -> Gen.alphaStr.map(s => Formlet(i => (f(i).success[Int], s).point[Id])),
-            1 -> Apply[Gen].tuple2(Gen.choose(1, 1000), Gen.alphaStr).map { case (i, s) =>
+            1 -> Apply[Gen].tuple2(Gen.choose(1, 1000), Gen.alphaStr).map { case (_, s) =>
               Formlet((i: Int) => (i.failure[Int], s).point[Id])
             }
           )
