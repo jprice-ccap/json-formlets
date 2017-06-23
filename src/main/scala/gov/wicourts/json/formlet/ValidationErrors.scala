@@ -135,6 +135,9 @@ object ValidationErrors {
       case v => v
     }
 
+  def nested(name: String, errors: ValidationErrors): ValidationErrors =
+    ObjectErrors(List((name, errors)))
+
   implicit val validationErrorsEqual: Equal[ValidationErrors] = Equal.equal((a1, a2) => {
     (a1, a2) match {
       case (FieldErrors(l1), FieldErrors(l2)) => l1.toList.sorted === l2.toList.sorted

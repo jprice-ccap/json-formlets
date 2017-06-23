@@ -2,7 +2,7 @@ name := "json-formlets"
 
 organization := "gov.wicourts"
 
-version := "0.4.1"
+version := "0.4.2"
 
 scalaVersion := "2.12.2"
 crossScalaVersions := Seq("2.11.8", "2.12.2")
@@ -34,7 +34,6 @@ scalacOptions ++= Seq(
   "-Xfuture",
   "-Xlint:adapted-args",
   "-Xlint:by-name-right-associative",
-  "-Xlint:constant",
   "-Xlint:delayedinit-select",
   "-Xlint:doc-detached",
   "-Xlint:inaccessible",
@@ -52,21 +51,30 @@ scalacOptions ++= Seq(
   // "-Xlint:unused", same as all the -Ywarn-unused:*
   "-Yno-adapted-args",
   "-Ywarn-dead-code",
-  "-Ywarn-extra-implicit",
   "-Ywarn-inaccessible",
   "-Ywarn-infer-any",
   "-Ywarn-nullary-override",
   "-Ywarn-nullary-unit",
   "-Ywarn-numeric-widen",
-  "-Ywarn-unused:implicits",
-  "-Ywarn-unused:imports",
-//  "-Ywarn-unused:locals", gives an incorrect warning in Forms.scala
-  "-Ywarn-unused:params",
-  "-Ywarn-unused:patvars",
-  "-Ywarn-unused:privates",
   "-Ywarn-value-discard",
   "-Yno-predef"   // no automatic import of Predef (removes irritating implicits)
-)
+) ++ (CrossVersion.partialVersion(scalaVersion.value) match {
+  case Some((2, scalaMajor)) if scalaMajor == 11 =>
+    Seq("-Ywarn-unused-import")
+  case Some((2, scalaMajor)) if scalaMajor >= 12 =>
+    Seq(
+      "-Xlint:constant",
+      "-Ywarn-extra-implicit",
+      "-Ywarn-unused:implicits",
+      "-Ywarn-unused:imports",
+      //"-Ywarn-unused:locals", // gives an incorrect warning in Forms.scala
+      "-Ywarn-unused:params",
+      "-Ywarn-unused:patvars",
+      "-Ywarn-unused:privates"
+    )
+  case _ =>
+    Seq.empty
+})
 
 //scalacOptions in Test ++= Seq("-Yrangepos")
 

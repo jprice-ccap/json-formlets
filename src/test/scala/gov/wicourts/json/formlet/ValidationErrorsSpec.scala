@@ -207,6 +207,17 @@ class ValidationErrorsSpec extends Specification with ScalaCheck {
                                     |  - First: a; b
                                     |  - Second: a; b""".stripMargin
     }
+
+    "can be nested" >> {
+      val in =
+        ValidationErrors.nested(
+          "a",
+          ValidationErrors.string("b", "bad_b") |+|
+            ValidationErrors.string("c", "bad_c")
+        )
+      in.toJson.nospaces must_== """{"a":{"b":["bad_b"],"c":["bad_c"]}}"""
+    }
+
   }
 
   "Type class laws" >> {
